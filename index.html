@@ -296,7 +296,6 @@ function defaultState(){return {
 };}
 let state = defaultState();
 let liveData = {observations:[], latest:null, daily:{}, models:[], openMeteoModels:[], metNorwayRows:[], ensemble:null, sourceStatus:{}};
-let fbSession = null;
 let saveTimer = null;
 let cloudPushTimer = null;
 let cloudPollTimer = null;
@@ -353,7 +352,6 @@ function mergeDefaults(saved){
 }
 function loadState(){
   try{const raw=localStorage.getItem(APP_KEY);if(raw)state=mergeDefaults(JSON.parse(raw));}catch(e){console.error("localStorage load failed",e);state=defaultState()}
-  try{const raw=null;if(raw)fbSession=JSON.parse(raw)}catch(e){console.error("session load failed",e)}
 }
 function persistState(opts={}){
   try{
@@ -544,7 +542,19 @@ function parseDelimited(text,sep=";"){const rows=[];let row=[],cur="",q=false;fo
 async function restoreCSV(file){try{const text=(await file.text()).replace(/^\ufeff/,""),rows=parseDelimited(text,";");if(rows.length<2)throw new Error("CSV içinde kayıt yok");const headers=rows[0],idx=Object.fromEntries(headers.map((h,i)=>[h,i]));let added=0,skipped=0;for(const row of rows.slice(1)){const get=h=>row[idx[h]]??"";const mode=get("mode")==="live"?"live":"practice",d=get("validDate");if(!d)continue;if(state.records[mode][d]){skipped++;continue}const num=h=>{const v=get(h);return v===""?null:Number(v)};state.records[mode][d]={mode,validDate:d,submittedAtIstanbul:get("submittedAtIstanbul"),status:get("status"),onTime:get("onTime")==="true",late:get("late")==="true",tmax:num("tmax"),tmin:num("tmin"),precip:num("precip"),wind:num("wind"),persistDate:get("persistDate"),persistCapturedAt:get("persistCapturedAt"),persistTmax:num("persistTmax"),persistTmin:num("persistTmin"),persistPrecip:num("persistPrecip"),persistWind:num("persistWind"),reasoning:get("reasoning"),confidence:get("confidence"),locked:true};const obs={tmax:num("obsTmax"),tmin:num("obsTmin"),precip:num("obsPrecip"),wind:num("obsWind")};const hasObs=Object.values(obs).some(Number.isFinite),learn={biggest:get("learnBiggest"),reason:get("learnReason"),next:get("learnNext")};if(hasObs||get("obsSource")||Object.values(learn).some(Boolean))state.verifications[mode][d]={observations:obs,source:get("obsSource"),learning:learn};added++}persistState();renderMode();showMessage("csvMessage",`Geri yükleme tamamlandı: ${added} yeni tarih eklendi, ${skipped} mevcut tarih atlandı. Puanlar geri yüklenen kayıtlardan yeniden hesaplandı.`,"good")}catch(e){showMessage("csvMessage",`Geri yükleme başarısız: ${e.message}`,"bad")}}
 
 function loadProfileFields(){const p=state.profile;$("studentName").value=p.name||"";$("studentNo").value=p.studentNo||"";$("reportStart").value=p.reportStart||"";$("reportEnd").value=p.reportEnd||"";$("reflection").value=p.reflection||"";$("aiLog").value=p.aiLog||"";renderTests();updateCloudMini()}
-function saveProfile(){state.profile={name:$("studentName").value.trim(),studentNo:$("studentNo").value.trim(),reportStart:$("reportStart").value,reportEnd:$("reportEnd").value,reflection:$("reflection").value.trim(),aiLog:$("aiLog").value.trim()};state.cloud={...state.cloud,apiKey:$("fbApiKey").value.trim(),projectId:$("fbProjectId").value.trim(),email:$("fbEmail").value.trim()};persistState();showMessage("reportMessage","Rapor bilgileri yerel olarak kaydedildi.","good")}
+function saveProfile(){
+  state.profile={
+    name:$("studentName").value.trim(),
+    studentNo:$("studentNo").value.trim(),
+    reportStart:$("reportStart").value,
+    reportEnd:$("reportEnd").value,
+    reflection:$("reflection").value.trim(),
+    aiLog:$("aiLog").value.trim()
+  };
+  state.cloud={};
+  persistState();
+  showMessage("reportMessage","Rapor bilgileri yerel olarak kaydedildi.","good");
+}
 function reportPeriod(){const p=state.profile,start=p.reportStart||"0000-01-01",end=p.reportEnd||"9999-12-31";return {start,end}}
 function generateReport(){saveProfile();const p=state.profile,part=participationStats(),period=reportPeriod(),mode=state.mode,recs=state.records[mode],vers=state.verifications[mode];const dates=Object.keys(recs).filter(d=>d>=period.start&&d<=period.end).sort();let scoreRows="";VARS.forEach(v=>{const s=scoreFor(v.key,mode,period);scoreRows+=`<tr><td>${v.label}</td><td>${s.cases}</td><td>${s.mae===null?"N/A":s.mae.toFixed(2)}</td><td>${s.bias===null?"N/A":s.bias.toFixed(2)}</td><td>${s.pmae===null?"N/A":s.pmae.toFixed(2)}</td><td>${s.skill===null?"N/A":s.skill.toFixed(1)+"%"}</td><td>${s.cases?`${s.w}/${s.t}/${s.l}`:"N/A"}</td><td>${s.overall===null?"N/A":s.overall.toFixed(1)}</td></tr>`});let app="";dates.forEach(d=>{const r=recs[d],v=vers[d]||{},o=v.observations||{},l=v.learning||{};app+=`<tr><td>${esc(d)}</td><td>${esc(r.submittedAtIstanbul)}</td><td>${esc(r.status)}</td><td>${fmt(r.tmax)} / ${fmt(o.tmax)}</td><td>${fmt(r.tmin)} / ${fmt(o.tmin)}</td><td>${fmt(r.precip)} / ${fmt(o.precip)}</td><td>${fmt(r.wind)} / ${fmt(o.wind)}</td><td>${esc(r.persistDate)}</td><td>${esc(v.source||"missing")}</td><td>${esc(l.biggest||"missing")}</td></tr>`});const scores=VARS.map(v=>({v,s:scoreFor(v.key,mode,period)}));let monthly="";for(const m of uniqueSorted(dates.map(monthKey))){for(const v of VARS){const s=scoreFor(v.key,mode,{start:`${m}-01`,end:`${m}-31`});monthly+=`<tr><td>${m}</td><td>${v.label}</td><td>${s.cases}</td><td>${s.mae===null?"N/A":s.mae.toFixed(2)}</td><td>${s.bias===null?"N/A":s.bias.toFixed(2)}</td><td>${s.skill===null?"N/A":s.skill.toFixed(1)+"%"}</td></tr>`}}const html=`<article class="reportPage"><h1>MTO111E Hava Tahmin Raporu</h1><p class="muted">Havalimanı LTFM · ${esc(mode==="practice"?"ALIŞTIRMA":"CANLI")} kayıtları · rapor dönemi ${esc(p.reportStart||"ayarlanmamış")} to ${esc(p.reportEnd||"ayarlanmamış")}</p><h2>Öğrenci ve katılım</h2><table><tr><th>Ad Soyad</th><td>${esc(p.name||"girilmemiş")}</td><th>Öğrenci no.</th><td>${esc(p.studentNo||"girilmemiş")}</td></tr><tr><th>Planlanan günler</th><td>${part.total||"N/A"}</td><th>Zamanında ve eksiksiz</th><td>${part.total?part.onTime:"N/A"}</td></tr><tr><th>Gereken minimum</th><td>${part.total?part.minReq:"N/A"}</td><th>Koşul</th><td>${part.total?(part.met?"Koşul sağlandı":"Koşul sağlanmadı"):"N/A"}</td></tr></table><h2>Tahmin performansı</h2><table><thead><tr><th>Değişken</th><th>Durum sayısı</th><th>MAE</th><th>Bias</th><th>Persistence MAE</th><th>Skill</th><th>W/T/L</th><th>Genel başarı</th></tr></thead><tbody>${scoreRows}</tbody></table><h2>Aylık gelişim</h2><table><thead><tr><th>Ay</th><th>Değişken</th><th>Durum sayısı</th><th>MAE</th><th>Bias</th><th>Skill</th></tr></thead><tbody>${monthly||'<tr><td colspan="6">N/A</td></tr>'}</tbody></table><h2>Kişisel değerlendirmem</h2><p>${esc(p.reflection||"girilmemiş").replace(/\n/g,"<br>")}</p><h2>Yapay zekâ kullanım günlüğü</h2><p>${esc(p.aiLog||"girilmemiş").replace(/\n/g,"<br>")}</p><div class="pageBreak"></div><h2>Günlük kayıt eki</h2><table><thead><tr><th>Geçerlilik tarihi</th><th>Gönderim</th><th>Durum</th><th>Tmax F/O</th><th>Tmin F/O</th><th>Precip F/O</th><th>Wind F/O</th><th>Persistence tarihi</th><th>Gözlem kaynağı</th><th>Öğrenme notu</th></tr></thead><tbody>${app||'<tr><td colspan="10">Bu dönemde kayıt yok.</td></tr>'}</tbody></table><div class="pageBreak"></div><h2>Genel başarı puanları</h2><table><thead><tr><th>Değişken</th><th>Genel başarı puanı</th></tr></thead><tbody>${scores.map(x=>`<tr><td>${x.v.label}</td><td>${x.s.overall===null?"N/A":x.s.overall.toFixed(1)}</td></tr>`).join("")}</tbody></table><p class="muted">Katılım bu dört değişken puanından ayrıdır. Eksik gözlemler sıfır kabul edilmez.</p></article>`;$("reportOutput").innerHTML=html;$("reportOutput").classList.add("generated");showMessage("reportMessage","Rapor kaydedilmiş kayıtlardan oluşturuldu.","good")}
 function printReport(){if(!$("reportOutput").classList.contains("generated"))generateReport();window.print()}
@@ -691,22 +701,83 @@ function updateCloudMini(status){
 }
 
 function wireEvents(){
-  qsa(".tabBtn").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
-  $("practiceModeBtn").addEventListener("click",()=>{state.mode="practice";persistState();renderMode()});$("liveModeBtn").addEventListener("click",()=>{state.mode="live";persistState();renderMode()});
-  $("practiceResetBtn").addEventListener("click",()=>{state.practiceOffset=0;persistState();renderMode()});$("practiceNextBtn").addEventListener("click",()=>{state.practiceOffset++;persistState();renderMode()});$("refreshLiveBtn").addEventListener("click",refreshLive);
-  qsa("[data-check]").forEach(x=>x.addEventListener("change",saveMission));$("saveIdeaBtn").addEventListener("click",saveIdea);
-  $("saveDraftBtn").addEventListener("click",saveDraft);$("submitForecastBtn").addEventListener("click",submitForecast);$("fillPersistenceBtn").addEventListener("click",fillPersistence);
-  $("verifyDateSelect").addEventListener("change",renderVerification);$("saveVerificationBtn").addEventListener("click",saveVerification);$("loadSyntheticObsBtn").addEventListener("click",loadSyntheticObservation);$("saveLearningBtn").addEventListener("click",saveLearning);
-  $("saveCalendarBtn").addEventListener("click",saveCalendar);$("runTestsBtn").addEventListener("click",runTests);$("downloadCsvBtn").addEventListener("click",exportCSV);$("uploadCsvInput").addEventListener("change",e=>{const f=e.target.files?.[0];if(f)restoreCSV(f);e.target.value=""});
-  $("saveProfileBtn").addEventListener("click",saveProfile);$("generateReportBtn").addEventListener("click",generateReport);$("printReportBtn").addEventListener("click",printReport);
-  cloudPush(true)});
-  qsa("#forecastFormWrap input,#forecastFormWrap textarea,#forecastFormWrap select,#persistDate,#pTmax,#pTmin,#pPrecip,#pWind").forEach(el=>el.addEventListener("input",()=>{if(!currentModeStore("records")[getTomorrow()]){currentModeStore("drafts")[getTomorrow()]=draftFromForm();scheduleSave()}}));
+  qsa(".tabBtn").forEach(b=>{
+    b.addEventListener("click",()=>showTab(b.dataset.tab));
+  });
+
+  $("practiceModeBtn").addEventListener("click",()=>{
+    state.mode="practice";
+    persistState();
+    renderMode();
+  });
+
+  $("liveModeBtn").addEventListener("click",()=>{
+    state.mode="live";
+    persistState();
+    renderMode();
+  });
+
+  $("practiceResetBtn").addEventListener("click",()=>{
+    state.practiceOffset=0;
+    persistState();
+    renderMode();
+  });
+
+  $("practiceNextBtn").addEventListener("click",()=>{
+    state.practiceOffset++;
+    persistState();
+    renderMode();
+  });
+
+  $("refreshLiveBtn").addEventListener("click",refreshLive);
+
+  qsa("[data-check]").forEach(x=>x.addEventListener("change",saveMission));
+  $("saveIdeaBtn").addEventListener("click",saveIdea);
+
+  $("saveDraftBtn").addEventListener("click",saveDraft);
+  $("submitForecastBtn").addEventListener("click",submitForecast);
+  $("fillPersistenceBtn").addEventListener("click",fillPersistence);
+
+  $("verifyDateSelect").addEventListener("change",renderVerification);
+  $("saveVerificationBtn").addEventListener("click",saveVerification);
+  $("loadSyntheticObsBtn").addEventListener("click",loadSyntheticObservation);
+  $("saveLearningBtn").addEventListener("click",saveLearning);
+
+  $("saveCalendarBtn").addEventListener("click",saveCalendar);
+  $("runTestsBtn").addEventListener("click",runTests);
+  $("downloadCsvBtn").addEventListener("click",exportCSV);
+
+  $("uploadCsvInput").addEventListener("change",e=>{
+    const f=e.target.files?.[0];
+    if(f) restoreCSV(f);
+    e.target.value="";
+  });
+
+  $("saveProfileBtn").addEventListener("click",saveProfile);
+  $("generateReportBtn").addEventListener("click",generateReport);
+  $("printReportBtn").addEventListener("click",printReport);
+
+  qsa("#forecastFormWrap input,#forecastFormWrap textarea,#forecastFormWrap select,#persistDate,#pTmax,#pTmin,#pPrecip,#pWind")
+    .forEach(el=>el.addEventListener("input",()=>{
+      if(!currentModeStore("records")[getTomorrow()]){
+        currentModeStore("drafts")[getTomorrow()]=draftFromForm();
+        scheduleSave();
+      }
+    }));
 }
 function tick(){$("clockText").textContent=`İstanbul saati: ${istDate()} ${istTime()}`}
 function auditConsole(){const required=["read-weather","make-forecast","check-errors","review-progress","save-report"];const missing=required.filter(id=>!$(id));if(missing.length)console.error("Missing required tab panels",missing)}
 
-document.addEventListener("DOMContentLoaded",()=>{updateCloudMini("bağlanıyor");
-  loadState();wireEvents();tick();setInterval(tick,1000);auditConsole();renderMode();renderTests();updateCloudMini();if(fbSession){startCloudPoll();cloudPull(false)}
+document.addEventListener("DOMContentLoaded",()=>{
+  loadState();
+  wireEvents();
+  tick();
+  setInterval(tick,1000);
+  auditConsole();
+  renderMode();
+  renderTests();
+  updateCloudMini("bağlanıyor");
+  startCloudPoll();
 });
 </script>
 </body>
