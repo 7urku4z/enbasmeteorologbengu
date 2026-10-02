@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<meta content="dark" name="color-scheme"/>
+<title>LTFM Öğrenci Hava Tahmin Panosu</title>
+<style>
+:root{
+  --bg:#07111f;--bg2:#0a1726;--panel:#0e1c2b;--panel2:#13263a;--text:#eef4fb;--muted:#9aabba;
+  --line:rgba(255,255,255,.11);--accent:#73a9ff;--accent2:#9cc5ff;--good:#38c98a;--warn:#f2b84b;
+  --bad:#d95b70;--danger:#8b1e2d;--dangerBg:rgba(139,30,45,.16);--shadow:0 22px 54px rgba(0,0,0,.28);
+  --radius:18px;--radius2:12px;--max:1220px;
+}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:radial-gradient(circle at 90% -10%,rgba(68,121,190,.22),transparent 35rem),linear-gradient(180deg,#08131f 0%,var(--bg) 100%);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,textarea,select{font:inherit}button{cursor:pointer}a{color:var(--accent2)}
+.page{width:min(var(--max),calc(100% - 28px));margin:auto;padding:26px 0 52px}.hero{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.eyebrow{margin:0 0 7px;color:var(--accent);font-size:.78rem;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.hero h1{margin:0;font-size:clamp(1.85rem,5vw,3.05rem);letter-spacing:-.04em;line-height:1.05}.subtitle{max-width:800px;margin:10px 0 0;color:var(--muted);line-height:1.6}.heroSide{display:flex;flex-direction:column;gap:8px;align-items:flex-end}.badge{border:1px solid var(--line);border-radius:999px;padding:8px 12px;background:rgba(255,255,255,.04);font-weight:850;letter-spacing:.05em;white-space:nowrap}.syncMini{font-size:.78rem;color:var(--muted)}
+.topControls{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}.segmented{display:inline-flex;border:1px solid var(--line);border-radius:12px;padding:4px;background:rgba(255,255,255,.035)}.segmented button{border:0;background:transparent;color:var(--muted);padding:8px 12px;border-radius:9px;font-weight:800}.segmented button.active{background:rgba(115,169,255,.15);color:#e7f0ff}.btn{border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.05);color:var(--text);padding:10px 14px;font-weight:780}.btn:hover{background:rgba(255,255,255,.085)}.btn.primary{border-color:rgba(115,169,255,.45);background:rgba(115,169,255,.15);color:#e8f1ff}.btn.good{border-color:rgba(56,201,138,.45);background:rgba(56,201,138,.12)}.btn.bad{border-color:rgba(217,91,112,.5);background:rgba(217,91,112,.12)}.btn.small{padding:7px 10px;font-size:.86rem}.btn:disabled{opacity:.45;cursor:not-allowed}
+.responsibilities{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0 20px}.responsibility{padding:15px;border:1px solid rgba(178,52,70,.52);border-radius:15px;background:var(--dangerBg)}.responsibility strong{display:block;color:#e16779;font-size:.9rem;line-height:1.35}.responsibility span{display:block;margin-top:7px;color:#f2dce0;font-size:.86rem;line-height:1.45}
+.mission{border:1px solid var(--line);border-radius:15px;background:rgba(255,255,255,.025);padding:14px;margin-bottom:18px}.missionHead{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}.missionHead h3{margin:0;font-size:1rem}.checkGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.checkItem{display:flex;align-items:flex-start;gap:8px;padding:9px;border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:.84rem;line-height:1.35;background:rgba(255,255,255,.02)}.checkItem input{margin-top:2px}
+.shell{overflow:hidden;border:1px solid var(--line);border-radius:var(--radius);background:rgba(14,28,43,.94);box-shadow:var(--shadow);backdrop-filter:blur(15px)}.tabs{display:flex;gap:8px;overflow-x:auto;padding:11px;border-bottom:1px solid var(--line);scrollbar-width:thin}.tabBtn{flex:0 0 auto;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--muted);padding:10px 13px;font-weight:800}.tabBtn:hover{background:rgba(255,255,255,.05);color:var(--text)}.tabBtn.active{border-color:rgba(115,169,255,.35);background:rgba(115,169,255,.12);color:#e2ecff}.panel{display:none;padding:clamp(18px,3.5vw,34px);min-height:460px}.panel.active{display:block}.panelTitle{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.panelTitle h2{margin:0;font-size:clamp(1.35rem,3vw,2rem);letter-spacing:-.025em}.panelTitle p{margin:6px 0 0;color:var(--muted);line-height:1.55}.modeTag{border:1px solid var(--line);padding:7px 10px;border-radius:999px;color:var(--accent2);font-weight:800;font-size:.82rem;white-space:nowrap}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.card{border:1px solid var(--line);border-radius:15px;background:rgba(255,255,255,.026);padding:16px}.card h3{margin:0 0 11px;font-size:1.02rem}.card h4{margin:14px 0 8px}.muted{color:var(--muted)}.smallText{font-size:.84rem;line-height:1.5}.synthetic{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(242,184,75,.5);background:rgba(242,184,75,.1);color:#ffd98c;border-radius:999px;padding:5px 9px;font-weight:850;font-size:.75rem;letter-spacing:.04em}.live{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(56,201,138,.45);background:rgba(56,201,138,.09);color:#91f0c4;border-radius:999px;padding:5px 9px;font-weight:850;font-size:.75rem}.dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.kpi{border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(255,255,255,.022)}.kpiLabel{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}.kpiValue{margin-top:5px;font-size:1.35rem;font-weight:900;letter-spacing:-.03em}.kpiMeta{margin-top:2px;font-size:.75rem;color:var(--muted)}
+.tableWrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}.dataTable{width:100%;border-collapse:collapse;min-width:720px}.dataTable th,.dataTable td{padding:10px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:.85rem}.dataTable th{position:sticky;top:0;background:#172a3f;color:#dce9f8;font-weight:850}.dataTable tr:last-child td{border-bottom:0}.dataTable td.num{font-variant-numeric:tabular-nums}.statusGood{color:#7ce4b4}.statusWarn{color:#ffd17b}.statusBad{color:#ff91a3}.statusNA{color:var(--muted)}
+.formGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field{display:flex;flex-direction:column;gap:7px}.field label{font-size:.82rem;color:#c8d5e4;font-weight:750}.field input,.field textarea,.field select{width:100%;border:1px solid var(--line);border-radius:10px;background:#0a1724;color:var(--text);padding:10px 11px;outline:none}.field input:focus,.field textarea:focus,.field select:focus{border-color:rgba(115,169,255,.6);box-shadow:0 0 0 3px rgba(115,169,255,.09)}.field textarea{min-height:92px;resize:vertical}.field.full{grid-column:1/-1}.fieldHint{font-size:.75rem;color:var(--muted);line-height:1.4}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.message{display:none;margin-top:12px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);line-height:1.45;font-size:.86rem}.message.show{display:block}.message.good{border-color:rgba(56,201,138,.4);background:rgba(56,201,138,.08);color:#a5f1ce}.message.warn{border-color:rgba(242,184,75,.42);background:rgba(242,184,75,.08);color:#ffe0a0}.message.bad{border-color:rgba(217,91,112,.42);background:rgba(217,91,112,.08);color:#ffb8c3}
+.metaList{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:.84rem}.metaList dt{color:var(--muted)}.metaList dd{margin:0}.hr{height:1px;background:var(--line);margin:16px 0}.infoBox{border-left:3px solid var(--accent);padding:10px 12px;background:rgba(115,169,255,.07);color:#cddcf0;border-radius:0 9px 9px 0;font-size:.86rem;line-height:1.5}.warningBox{border-left-color:var(--warn);background:rgba(242,184,75,.07);color:#ffe0a0}.dangerBox{border-left-color:var(--bad);background:rgba(217,91,112,.07);color:#ffc1cb}.codeBox{white-space:pre-wrap;word-break:break-word;border:1px solid var(--line);border-radius:10px;background:#07131e;padding:11px;color:#cfe0f3;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+.receipt{border:1px dashed rgba(115,169,255,.4);border-radius:12px;padding:13px;background:rgba(115,169,255,.05)}.receipt h4{margin:0 0 8px}.locked{opacity:.72}.recordList{display:grid;gap:8px}.recordItem{display:flex;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:10px;padding:10px 11px;background:rgba(255,255,255,.018)}
+.progressBar{height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}.progressBar>span{display:block;height:100%;background:linear-gradient(90deg,#619cff,#8fc0ff);width:0}.scorePill{display:inline-block;border-radius:999px;padding:4px 8px;background:rgba(255,255,255,.06);font-size:.78rem;font-weight:800}
+.reportOutput{display:none}.reportOutput.generated{display:block}.reportPage{background:white;color:#162235;border-radius:12px;padding:28px;margin-top:14px}.reportPage h1,.reportPage h2,.reportPage h3{color:#0b1a2d}.reportPage table{width:100%;border-collapse:collapse;margin:10px 0 18px;font-size:12px}.reportPage th,.reportPage td{border:1px solid #cfd8e3;padding:7px;text-align:left;vertical-align:top}.reportPage th{background:#dbe9f8!important;color:#10253b}.reportPage .muted{color:#536779}.reportPage .pageBreak{break-before:page;page-break-before:always}
+.footer{margin:16px 3px 0;color:#75879a;font-size:.78rem;line-height:1.5}
+@media(max-width:900px){.responsibilities,.checkGrid,.grid4,.grid3{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:1fr 1fr}.heroSide{align-items:flex-start}.hero{display:block}.heroSide{margin-top:12px}.grid2{grid-template-columns:1fr}}
+@media(max-width:620px){.page{width:min(100% - 16px,var(--max));padding-top:16px}.responsibilities,.checkGrid,.grid4,.grid3,.kpis,.formGrid{grid-template-columns:1fr}.panel{padding:17px}.field.full{grid-column:auto}.missionHead,.panelTitle{display:block}.modeTag{display:inline-block;margin-top:10px}.tabBtn{padding:9px 11px;font-size:.86rem}.hero h1{font-size:2rem}}
+@media print{
+  body{background:white!important}.page>*:not(.shell){display:none!important}.shell{border:0!important;box-shadow:none!important;background:white!important}.tabs,.panel{display:none!important}#save-report.panel{display:block!important;padding:0!important}.panelTitle,#save-report>.nonPrint{display:none!important}.reportOutput{display:block!important}.reportPage{display:block!important;border-radius:0!important;padding:0!important;margin:0!important}.reportPage table{font-size:10px}.reportPage th{background:#dbe9f8!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.reportPage .pageBreak{page-break-before:always}
+}
+</style>
+</head>
+<body>
+<main class="page">
+<header class="hero">
+<div>
+<p class="eyebrow">MTO111E · LTFM</p>
+<h1>İstanbul Havalimanı Öğrenci Hava Tahmin Panosu</h1>
+<p class="subtitle">Kendi hava tahminini yap, gözlemlerle karşılaştır, hatalarından öğren ve gelişimini raporla. Alıştırma ve CANLI kayıtlar ayrı tutulur.</p>
+</div>
+<div class="heroSide">
+<div class="badge">LTFM · Europe/Istanbul · UTC+3</div>
+<div class="syncMini" id="clockText">İstanbul saati: —</div>
+<div class="syncMini" id="cloudMini">Bulut senkronu: kapalı</div>
+</div>
+</header>
+<div class="topControls">
+<div aria-label="Mod seçici" class="segmented">
+<button class="active" id="practiceModeBtn" type="button">Alıştırma</button>
+<button id="liveModeBtn" type="button">CANLI</button>
+</div>
+<div aria-label="Alıştırma saati" class="segmented" id="practiceClockControls">
+<button id="practiceResetBtn" type="button">Alıştırma tarihini sıfırla</button>
+<button id="practiceNextBtn" type="button">Bir gün ileri git</button>
+</div>
+<button class="btn primary" id="refreshLiveBtn" type="button">CANLI verileri yenile</button>
+</div>
+<section class="responsibilities">
+<article class="responsibility"><strong>1 · EN AZ %70 KATILIM ZORUNLUDUR.</strong><span>Planlanan tahmin günlerinin en az %70’inde eksiksiz tahminini zamanında gönder.</span></article>
+<article class="responsibility"><strong>2 · HER TAHMİN GÜNÜ İSTANBUL SAATİYLE 21:00’E KADAR GÖNDER.</strong><span>Yarının havasını tahmin et. 21:00:00 zamanında; 21:00:01 geçtir.</span></article>
+<article class="responsibility"><strong>3 · HER GÜN DÜNÜ KONTROL ET VE DERS ÇIKAR.</strong><span>Dün için kaydettiğin tahmini dünkü gözlemlerle karşılaştır ve bir ders kaydet.</span></article>
+</section>
+<section class="mission">
+<div class="missionHead"><h3>Günlük görev kontrol listesi</h3><span class="muted smallText" id="missionDate">—</span></div>
+<div class="checkGrid">
+<label class="checkItem"><input data-check="review" type="checkbox"/> <span>Dünü gözden geçir<br/><small>En büyük hatam neydi?</small></span></label>
+<label class="checkItem"><input data-check="study" type="checkbox"/> <span>Bugünü incele<br/><small>Şu anda ne oluyor?</small></span></label>
+<label class="checkItem"><input data-check="models" type="checkbox"/> <span>Modelleri karşılaştır<br/><small>Nerede aynı fikirde?</small></span></label>
+<label class="checkItem"><input data-check="decide" type="checkbox"/> <span>Karar ver<br/><small>Tahminim ve nedeni</small></span></label>
+<label class="checkItem"><input data-check="submit" type="checkbox"/> <span>Gönder ve yedekle<br/><small>Son teslimden önce</small></span></label>
+</div>
+</section>
+<section class="shell">
+<nav aria-label="Pano bölümleri" class="tabs">
+<button class="tabBtn active" data-tab="read-weather" type="button">1 · Havayı incele</button>
+<button class="tabBtn" data-tab="make-forecast" type="button">2 · Tahmin yap</button>
+<button class="tabBtn" data-tab="check-errors" type="button">3 · Hataları kontrol et</button>
+<button class="tabBtn" data-tab="review-progress" type="button">4 · Gelişimi incele</button>
+<button class="tabBtn" data-tab="save-report" type="button">5 · Raporunu kaydet</button>
+</nav>
+<section class="panel active" id="read-weather">
+<div class="panelTitle"><div><h2>Havayı incele</h2><p>Gözlem ≠ tahmin. Her zaman yer, tarih, zaman aralığı, birim ve kaynağı kontrol et.</p></div><span class="modeTag" id="readModeTag">Alıştırma</span></div>
+<div class="grid2">
+<article class="card">
+<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><h3 style="margin:0">Güncel / son gözlem</h3><span class="synthetic" id="obsTypeBadge"><span class="dot"></span>SENTETİK</span></div>
+<div class="muted smallText" id="latestObservation" style="margin-top:12px">Yükleniyor…</div>
+</article>
+<article class="card">
+<h3>Gerçeklik kontrolü</h3>
+<div class="infoBox" id="realityCheck">Yükleniyor…</div>
+</article>
+</div>
+<div class="card" style="margin-top:14px">
+<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><h3 style="margin:0">Bugün ve yarın için model rehberliği</h3><span class="synthetic" id="modelTypeBadge"><span class="dot"></span>SENTETİK</span></div>
+<div class="tableWrap" style="margin-top:12px"><table class="dataTable"><thead><tr><th>Kaynak / model</th><th>Geçerli gün</th><th>Tmax °C</th><th>Tmin °C</th><th>Yağış mm</th><th>En yüksek sürekli rüzgâr kt</th></tr></thead><tbody id="modelTableBody"></tbody></table></div>
+</div>
+<div class="grid2" style="margin-top:14px">
+<article class="card">
+<h3>Modellere bakmadan önce ilk fikrim</h3>
+<div class="formGrid">
+<div class="field"><label for="ideaTemp">Yarın…</label><select id="ideaTemp"><option value="">Seç</option><option>Daha sıcak</option><option>Daha soğuk</option><option>Benzer</option></select></div>
+<div class="field"><label for="ideaPrecip">Yağış?</label><select id="ideaPrecip"><option value="">Seç</option><option>Evet</option><option>Hayır</option><option>Belirsiz</option></select></div>
+<div class="field full"><label for="ideaWhy">Neden?</label><textarea id="ideaWhy" placeholder="İlk fikrim şuna dayanıyor…"></textarea></div>
+<div class="field full"><label for="ideaChanged">Modellere baktıktan sonra ilk fikrimi şu nedenle değiştirdim…</label><textarea id="ideaChanged"></textarea></div>
+</div>
+<div class="actions"><button class="btn small" id="saveIdeaBtn" type="button">İlk fikri kaydet</button></div>
+<div class="message" id="ideaMessage"></div>
+</article>
+<article class="card">
+<h3>Ensemble özeti</h3>
+<div class="muted smallText" id="ensembleSummary">Alıştırma modunda ensemble verisi kullanılmaz. CANLI moda geçip yenile.</div>
+</article>
+</div>
+<div class="card" style="margin-top:14px">
+<h3>Kaynak durumu</h3>
+<div class="tableWrap"><table class="dataTable"><thead><tr><th>Kaynak</th><th>HTTP / durum</th><th>Hata metni</th><th>Güncelleme zamanı</th></tr></thead><tbody id="sourceStatusBody"></tbody></table></div>
+<div class="actions"><a class="btn small" href="https://aviationweather.gov/api/data/taf?ids=LTFM&amp;format=json" rel="noopener" target="_blank">LTFM TAF JSON’u aç</a><a class="btn small" href="https://aviationweather.gov/api/data/metar?ids=LTFM&amp;format=json&amp;hours=24" rel="noopener" target="_blank">LTFM METAR JSON’u aç</a></div>
+<p class="muted smallText">Aviation Weather JSON yerel dosyadan CORS nedeniyle engellenirse bağlantı olarak kullan; proxy kullanılmaz.</p>
+</div>
+</section>
+<section class="panel" id="make-forecast">
+<div class="panelTitle"><div><h2>Tahmin yap</h2><p>Yarın, İstanbul saatiyle 00:00–23:59 aralığıdır. Son değerleri sen belirlersin.</p></div><span class="modeTag" id="forecastModeTag">Alıştırma</span></div>
+<div class="grid2">
+<article class="card">
+<h3>Tahmin tarihi: <span id="forecastValidDate">—</span></h3>
+<div class="formGrid" id="forecastFormWrap">
+<div class="field"><label for="fcTmax">Tmax (°C)</label><input id="fcTmax" step="0.1" type="number"/></div>
+<div class="field"><label for="fcTmin">Tmin (°C)</label><input id="fcTmin" step="0.1" type="number"/></div>
+<div class="field"><label for="fcPrecip">Yağış miktarı (mm)</label><input id="fcPrecip" min="0" step="0.1" type="number"/><span class="fieldHint">Olasılık değil, miktar.</span></div>
+<div class="field"><label for="fcWind">En yüksek sürekli rüzgâr (knot)</label><input id="fcWind" min="0" step="0.1" type="number"/><span class="fieldHint">Rüzgâr hamlesi değil, sürekli rüzgâr.</span></div>
+<div class="field full"><label for="fcReason">Gerekçe (en az iki kısa cümle)</label><textarea id="fcReason" placeholder="Bu değerleri seçtim çünkü…"></textarea></div>
+<div class="field"><label for="fcConfidence">Güven düzeyi</label><select id="fcConfidence"><option value="">Seç</option><option>Düşük</option><option>Orta</option><option>Yüksek</option></select></div>
+</div>
+<div class="actions"><button class="btn" id="saveDraftBtn" type="button">Taslağı yerel olarak kaydet</button><button class="btn primary" id="submitForecastBtn" type="button">Benzetim gönderimini kaydet</button></div>
+<div class="message" id="forecastMessage"></div>
+</article>
+<article class="card">
+<h3>Persistence referansı</h3>
+<p class="muted smallText">Gönderimden önce erişilebilen son TAMAMLANMIŞ İstanbul gününü kullan. Bugünün tamamlanmamış verisini veya gönderimden sonra gelen bilgiyi kullanma.</p>
+<div class="formGrid">
+<div class="field full"><label for="persistDate">Referans tarihi</label><input id="persistDate" type="date"/></div>
+<div class="field"><label for="pTmax">Tmax °C</label><input id="pTmax" step="0.1" type="number"/></div>
+<div class="field"><label for="pTmin">Tmin °C</label><input id="pTmin" step="0.1" type="number"/></div>
+<div class="field"><label for="pPrecip">Yağış mm</label><input id="pPrecip" min="0" step="0.1" type="number"/></div>
+<div class="field"><label for="pWind">En yüksek sürekli rüzgâr kt</label><input id="pWind" min="0" step="0.1" type="number"/></div>
+</div>
+<div class="actions"><button class="btn small" id="fillPersistenceBtn" type="button">Son tamamlanmış günden doldur</button></div>
+<div class="message" id="persistMessage"></div>
+<div class="hr"></div>
+<div class="infoBox warningBox">Yerel/benzetim alındısı resmî ders gönderimi değildir. Gerçek yarışmada öğretim elemanının resmî gönderim sistemini kullan.</div>
+</article>
+</div>
+<div class="card" style="margin-top:14px"><h3>Kaydedilmiş / gönderilmiş tahmin</h3><div class="muted smallText" id="submissionReceipt">Bu geçerlilik tarihi için gönderilmiş tahmin yok.</div></div>
+</section>
+<section class="panel" id="check-errors">
+<div class="panelTitle"><div><h2>Hataları kontrol et</h2><p>Hata = tahmin − gözlem. Boş gözlemler eksik kalır ve asla sıfır kabul edilmez.</p></div><span class="modeTag" id="errorModeTag">Alıştırma</span></div>
+<div class="grid2">
+<article class="card">
+<h3>Kaydedilmiş bir tahmin seç</h3>
+<div class="field"><label for="verifyDateSelect">Geçerlilik tarihi</label><select id="verifyDateSelect"><option value="">Uygun tamamlanmış gün yok</option></select></div>
+<div class="muted smallText" id="verifyForecastSummary" style="margin-top:12px">Hedef günü bittikten sonra bir tahmin seç.</div>
+<div class="hr"></div>
+<h3>Öğretim elemanı onaylı gözlemler</h3>
+<div class="formGrid">
+<div class="field"><label for="obsTmax">Tmax °C</label><input id="obsTmax" step="0.1" type="number"/></div>
+<div class="field"><label for="obsTmin">Tmin °C</label><input id="obsTmin" step="0.1" type="number"/></div>
+<div class="field"><label for="obsPrecip">Yağış mm</label><input id="obsPrecip" min="0" step="0.1" type="number"/></div>
+<div class="field"><label for="obsWind">En yüksek sürekli rüzgâr kt</label><input id="obsWind" min="0" step="0.1" type="number"/></div>
+<div class="field full"><label for="obsSource">Gözlem kaynağı</label><input id="obsSource" placeholder="Öğretim elemanı onaylı kaynak" type="text"/></div>
+</div>
+<div class="actions"><button class="btn small" id="loadSyntheticObsBtn" type="button">Sentetik günlük gözlemi yükle</button><button class="btn primary" id="saveVerificationBtn" type="button">Gözlemleri kaydet ve hesapla</button></div>
+<div class="message" id="verifyMessage"></div>
+</article>
+<article class="card">
+<h3>Hata sonuçları</h3>
+<div class="tableWrap"><table class="dataTable"><thead><tr><th>Değişken</th><th>Tahmin</th><th>Gözlem</th><th>Hata</th><th>|Error|</th><th>Persistence hatası</th><th>Sonuç</th></tr></thead><tbody id="errorTableBody"></tbody></table></div>
+<div class="hr"></div>
+<h3>Günlük öğrenme notu</h3>
+<div class="field"><label for="learnBiggest">En büyük hatam…</label><textarea id="learnBiggest"></textarea></div>
+<div class="field" style="margin-top:10px"><label for="learnReason">Olası bir neden…</label><textarea id="learnReason"></textarea></div>
+<div class="field" style="margin-top:10px"><label for="learnNext">Bir sonraki tahminimde şunu kontrol edeceğim…</label><textarea id="learnNext"></textarea></div>
+<div class="actions"><button class="btn" id="saveLearningBtn" type="button">Öğrenme notunu kaydet</button></div>
+</article>
+</div>
+</section>
+<section class="panel" id="review-progress">
+<div class="panelTitle"><div><h2>Gelişimi incele</h2><p>Katılım ve tahmin doğruluğu ayrı gösterilir.</p></div><span class="modeTag" id="progressModeTag">Alıştırma</span></div>
+<div class="grid2">
+<article class="card">
+<h3>Resmî tahmin takvimi</h3>
+<div class="field"><label for="calendarDates">Planlanan GEÇERLİ tarihler (satır başına bir tarih veya virgülle ayrılmış)</label><textarea id="calendarDates" placeholder="2026-10-05
+2026-10-06
+2026-10-07"></textarea><span class="fieldHint">Öğretim elemanının tam takvimini kullan. Kaçırılan günleri silme.</span></div>
+<div class="actions"><button class="btn" id="saveCalendarBtn" type="button">Takvimi kaydet</button></div>
+</article>
+<article class="card">
+<h3>Katılım</h3>
+<div class="kpis">
+<div class="kpi"><div class="kpiLabel">Planlanan</div><div class="kpiValue" id="kpiScheduled">N/A</div><div class="kpiMeta">tam takvim</div></div>
+<div class="kpi"><div class="kpiLabel">Geçmiş son teslimler</div><div class="kpiValue" id="kpiElapsed">N/A</div><div class="kpiMeta">gelecek tarihler kaçırılmış sayılmaz</div></div>
+<div class="kpi"><div class="kpiLabel">Zamanında ve eksiksiz</div><div class="kpiValue" id="kpiOnTime">N/A</div><div class="kpiMeta">bir kez sayılır</div></div>
+<div class="kpi"><div class="kpiLabel">Gereken minimum</div><div class="kpiValue" id="kpiMinimum">N/A</div><div class="kpiMeta">%70, yukarı yuvarlanır</div></div>
+</div>
+<div class="progressBar" style="margin-top:12px"><span id="participationBar"></span></div>
+<div class="muted smallText" id="participationText" style="margin-top:8px">Öğretim elemanının tam takvimini ekle.</div>
+</article>
+</div>
+<div class="card" style="margin-top:14px">
+<h3>Doğruluk ve persistence becerisi</h3>
+<div class="tableWrap"><table class="dataTable"><thead><tr><th>Değişken</th><th>Geçerli durumlar</th><th>MAE</th><th>Bias</th><th>Persistence MAE</th><th>Skill %</th><th>Kazanç / Beraberlik / Kayıp</th><th>Genel başarı</th></tr></thead><tbody id="scoreTableBody"></tbody></table></div>
+<p class="muted smallText">Eligible cases use the same cases for your MAE and persistence MAE. Skill is N/A if there are no eligible cases or persistence MAE = 0. Negative skill remains visible.</p>
+</div>
+<div class="grid2" style="margin-top:14px">
+<article class="card"><h3>Aylık gelişim</h3><div class="muted smallText" id="monthlyProgress">Henüz uygun doğrulanmış durum yok.</div></article>
+<article class="card"><h3>Puanlama kontrolleri</h3><p class="muted smallText">Bu testler ayrı yerleşik test verileri kullanır ve kayıtlarını değiştirmez.</p><div class="actions"><button class="btn" id="runTestsBtn" type="button">Puanlama kontrollerini çalıştır</button></div><div class="muted smallText" id="testResults" style="margin-top:10px">NOT TESTED</div></article>
+</div>
+</section>
+<section class="panel" id="save-report">
+<div class="panelTitle"><div><h2>Raporunu kaydet</h2><p>Her kaydı yedekle, dönem raporunu oluştur ve PDF olarak kaydet.</p></div><span class="modeTag" id="reportModeTag">Alıştırma</span></div>
+<div class="nonPrint">
+<div class="grid2">
+<article class="card">
+<h3>CSV yedekleme ve geri yükleme</h3>
+<p class="muted smallText">CSV; tahmin, gönderim, persistence, gözlem ve öğrenme notu alanlarını içerir. Geri yükleme yeni tarihleri ekler, mevcut tarihleri atlar.</p>
+<div class="actions"><button class="btn primary" id="downloadCsvBtn" type="button">CSV yedeğini indir</button><label class="btn" for="uploadCsvInput">Geri yüklemek için CSV yükle</label><input accept=".csv,text/csv" hidden="" id="uploadCsvInput" type="file"/></div>
+<div class="message" id="csvMessage"></div>
+</article>
+<article class="card">
+<h3>Rapor bilgileri</h3>
+<div class="formGrid">
+<div class="field"><label for="studentName">Ad Soyad</label><input id="studentName" type="text"/></div>
+<div class="field"><label for="studentNo">Öğrenci numarası</label><input id="studentNo" type="text"/></div>
+<div class="field"><label for="reportStart">Rapor başlangıcı</label><input id="reportStart" type="date"/></div>
+<div class="field"><label for="reportEnd">Rapor bitişi</label><input id="reportEnd" type="date"/></div>
+<div class="field full"><label for="reflection">Kişisel değerlendirmem</label><textarea id="reflection" placeholder="Ne öğrendim? Neyi değiştirdim? Nerede gelişmeliyim?"></textarea></div>
+<div class="field full"><label for="aiLog">Yapay zekâ kullanım günlüğü</label><textarea id="aiLog" placeholder="Neyi kullandım, neyi değiştirdim ve neyi kontrol ettim?"></textarea></div>
+</div>
+<div class="actions"><button class="btn" id="saveProfileBtn" type="button">Rapor bilgilerini kaydet</button><button class="btn primary" id="generateReportBtn" type="button">Rapor oluştur</button><button class="btn good" id="printReportBtn" type="button">Yazdır / PDF olarak kaydet</button></div>
+<div class="message" id="reportMessage"></div>
+</article>
+</div>
+<article class="card" style="margin-top:14px">
+<h3>Otomatik cihazlar arası senkronizasyon</h3>
+<p class="muted smallText">
+Site açıldığında Firebase Realtime Database'e otomatik bağlanır.
+PC ve telefonda aynı siteyi açtığında kayıtlar birkaç saniye içinde eşitlenir.
+localStorage yerel yedek olarak çalışmaya devam eder.
+</p>
+<div class="message good" id="firebaseMessage" style="display:block">
+Bağlantı hazırlanıyor…
+</div>
+<p class="muted smallText">
+Senkronizasyon yöntemi: son değişiklik zamanı kazanır (last-write-wins).
+</p>
+</article>
+</div>
+<div class="reportOutput" id="reportOutput"></div>
+</section>
+</section>
+<p class="footer">Tek dosyalık final pano · ana depolama localStorage · CSV yedeği · otomatik Firebase Realtime Database senkronu · CANLI hava verileri yönergedeki açık kaynakları ve tarayıcı fetch() işlevini kullanır</p>
+</main>
+<script>
+"use strict";
+
+const FIREBASE_CONFIG = {
+  databaseURL: "https://basmeteorologbengu-26eb7-default-rtdb.firebaseio.com"
+};
+
+
+const APP_KEY = "ltfmStudentDashboardFinalV1";
+
+const IST_TZ = "Europe/Istanbul";
+const AIRPORT = "LTFM";
+const LAT = 41.2753;
+const LON = 28.7519;
+const VARS = [
+  {key:"tmax", label:"Tmax", unit:"°C", pKey:"tmax"},
+  {key:"tmin", label:"Tmin", unit:"°C", pKey:"tmin"},
+  {key:"precip", label:"Yağış", unit:"mm", pKey:"precip"},
+  {key:"wind", label:"Rüzgâr", unit:"kt", pKey:"wind"}
+];
+
+function defaultState(){return {
+  version:1, mode:"practice", practiceOffset:0,
+  records:{practice:{},live:{}}, verifications:{practice:{},live:{}}, drafts:{practice:{},live:{}},
+  initialIdeas:{practice:{},live:{}}, checklist:{practice:{},live:{}},
+  calendar:[], profile:{name:"",studentNo:"",reportStart:"",reportEnd:"",reflection:"",aiLog:""},
+  cloud:{}, tests:{ran:false,results:[]},
+  meta:{updatedAt:Date.now()}
+};}
+let state = defaultState();
+let liveData = {observations:[], latest:null, daily:{}, models:[], openMeteoModels:[], metNorwayRows:[], ensemble:null, sourceStatus:{}};
+let fbSession = null;
+let saveTimer = null;
+let cloudPushTimer = null;
+let cloudPollTimer = null;
+let isApplyingRemote = false;
+
+function $(id){return document.getElementById(id)}
+function qsa(sel){return Array.from(document.querySelectorAll(sel))}
+function esc(v){return String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]))}
+function isFiniteNum(v){return v!==""&&v!==null&&v!==undefined&&Number.isFinite(Number(v))}
+function nOrNull(v){return isFiniteNum(v)?Number(v):null}
+function fmt(v,d=1){return isFiniteNum(v)?Number(v).toFixed(d):"eksik"}
+function mean(a){const b=a.filter(Number.isFinite);return b.length?b.reduce((x,y)=>x+y,0)/b.length:null}
+function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+function uniqueSorted(arr){return [...new Set(arr)].sort()}
+function compareISO(a,b){return String(a).localeCompare(String(b))}
+function addDaysISO(iso,days){const [y,m,d]=iso.split("-").map(Number);const dt=new Date(Date.UTC(y,m-1,d+days));return dt.toISOString().slice(0,10)}
+function monthKey(iso){return iso?iso.slice(0,7):""}
+function humanDate(iso){if(!iso)return"—";const [y,m,d]=iso.split("-").map(Number);return new Intl.DateTimeFormat("tr-TR",{day:"2-digit",month:"short",year:"numeric",timeZone:IST_TZ}).format(new Date(Date.UTC(y,m-1,d,12)))}
+
+function istParts(date=new Date()){
+  const parts=new Intl.DateTimeFormat("en-CA",{timeZone:IST_TZ,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).formatToParts(date);
+  const o={}; parts.forEach(p=>{if(p.type!=="literal")o[p.type]=p.value}); return o;
+}
+function istDate(date=new Date()){const p=istParts(date);return `${p.year}-${p.month}-${p.day}`}
+function istTime(date=new Date()){const p=istParts(date);return `${p.hour}:${p.minute}:${p.second}`}
+function istStamp(date=new Date()){return `${istDate(date)}T${istTime(date)}+03:00`}
+function realNowSeconds(){const p=istParts();return Number(p.hour)*3600+Number(p.minute)*60+Number(p.second)}
+function isOnTimeNow(){return realNowSeconds()<=21*3600}
+function getWorkDate(){return state.mode==="practice"?addDaysISO(istDate(),state.practiceOffset):istDate()}
+function getTomorrow(){return addDaysISO(getWorkDate(),1)}
+function currentModeStore(name){return state[name][state.mode]}
+function dayEnded(validDate){return compareISO(getWorkDate(),validDate)>0}
+function deadlineElapsed(validDate){
+  const deadlineDay=addDaysISO(validDate,-1), nowDate=istDate();
+  if(nowDate>deadlineDay)return true;if(nowDate<deadlineDay)return false;return realNowSeconds()>21*3600;
+}
+
+function showMessage(id,text,type="good"){
+  const el=$(id); if(!el)return; el.textContent=text;el.className=`message show ${type}`;
+}
+function clearMessage(id){const el=$(id);if(el)el.className="message"}
+
+function mergeDefaults(saved){
+  const d=defaultState();
+  if(!saved||typeof saved!=="object")return d;
+  const out={...d,...saved};
+  out.records={practice:{...(saved.records?.practice||{})},live:{...(saved.records?.live||{})}};
+  out.verifications={practice:{...(saved.verifications?.practice||{})},live:{...(saved.verifications?.live||{})}};
+  out.drafts={practice:{...(saved.drafts?.practice||{})},live:{...(saved.drafts?.live||{})}};
+  out.initialIdeas={practice:{...(saved.initialIdeas?.practice||{})},live:{...(saved.initialIdeas?.live||{})}};
+  out.checklist={practice:{...(saved.checklist?.practice||{})},live:{...(saved.checklist?.live||{})}};
+  out.profile={...d.profile,...(saved.profile||{})};out.cloud={...d.cloud,...(saved.cloud||{})};out.meta={...d.meta,...(saved.meta||{})};
+  return out;
+}
+function loadState(){
+  try{const raw=localStorage.getItem(APP_KEY);if(raw)state=mergeDefaults(JSON.parse(raw));}catch(e){console.error("localStorage load failed",e);state=defaultState()}
+  try{const raw=null;if(raw)fbSession=JSON.parse(raw)}catch(e){console.error("session load failed",e)}
+}
+function persistState(opts={}){
+  try{
+    if(!opts.keepTimestamp)state.meta.updatedAt=Date.now();
+    localStorage.setItem(APP_KEY,JSON.stringify(state));
+  }catch(e){console.error("localStorage save failed",e)}
+  if(!isApplyingRemote)scheduleCloudPush();
+}
+function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>persistState(),180)}
+
+function showTab(tabName){
+  const target=$(tabName);if(!target){console.error("Unknown tab",tabName);return}
+  qsa(".panel").forEach(p=>p.classList.toggle("active",p.id===tabName));
+  qsa(".tabBtn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tabName));
+  if(tabName==="review-progress")renderProgress();
+  if(tabName==="save-report")loadProfileFields();
+  if(tabName==="check-errors")renderVerificationSelector();
+}
+
+function renderMode(){
+  const practice=state.mode==="practice";
+  $("practiceModeBtn").classList.toggle("active",practice);$("liveModeBtn").classList.toggle("active",!practice);
+  $("practiceClockControls").style.display=practice?"inline-flex":"none";$("refreshLiveBtn").style.display=practice?"none":"inline-block";
+  ["readModeTag","forecastModeTag","errorModeTag","progressModeTag","reportModeTag"].forEach(id=>$(id).textContent=practice?"Alıştırma":"CANLI");
+  renderMission();renderReadWeather();renderForecastForm();renderVerificationSelector();renderProgress();loadProfileFields();
+}
+
+function seeded(date,salt=0){let x=0;for(const c of `${date}-${salt}`)x=(x*31+c.charCodeAt(0))>>>0;return (x%10000)/10000}
+function syntheticDaily(date,variant=0){
+  const a=seeded(date,variant),b=seeded(date,variant+17),c=seeded(date,variant+31);
+  const tmin=6+Math.round(a*90)/10;const tmax=tmin+5+Math.round(b*55)/10;const precip=c>.62?Math.round((c-.62)*35*10)/10:0;const wind=7+Math.round(seeded(date,variant+71)*18*10)/10;
+  return {tmax:+tmax.toFixed(1),tmin:+tmin.toFixed(1),precip:+precip.toFixed(1),wind:+wind.toFixed(1)};
+}
+function renderReadWeather(){
+  const practice=state.mode==="practice";const today=getWorkDate(),tom=addDaysISO(today,1);
+  $("obsTypeBadge").className=practice?"synthetic":"live";$("obsTypeBadge").innerHTML=`<span class="dot"></span>${practice?"SENTETİK":"CANLI"}`;
+  $("modelTypeBadge").className=practice?"synthetic":"live";$("modelTypeBadge").innerHTML=`<span class="dot"></span>${practice?"SENTETİK":"CANLI"}`;
+  if(practice){
+    const obs=syntheticDaily(today,91),a=syntheticDaily(tom,1),b=syntheticDaily(tom,2);const current=+(obs.tmin+(obs.tmax-obs.tmin)*0.55).toFixed(1);const modelNow=+(current+(seeded(today,4)-.5)*2).toFixed(1);
+    $("latestObservation").innerHTML=`<dl class="metaList"><dt>Havalimanı</dt><dd>LTFM</dd><dt>Geçerlilik tarihi</dt><dd>${esc(today)}</dd><dt>Tür</dt><dd>SENTETİK alıştırma gözlemi</dd><dt>Sıcaklık</dt><dd>${current} °C</dd><dt>Sürekli rüzgâr</dt><dd>${obs.wind} kt</dd><dt>Güncelleme</dt><dd>Alıştırma saati</dd></dl>`;
+    $("realityCheck").textContent=`SENTETİK aynı-zaman kontrolü: Model A tahmini ${modelNow} °C, alıştırma gözlemi ise ${current} °C. Fark: ${(modelNow-current).toFixed(1)} °C.`;
+    const rows=[
+      {name:"Model A · SENTETİK",date:tom,...a},{name:"Model B · SENTETİK",date:tom,...b}
+    ];renderModelRows(rows);$("ensembleSummary").textContent="Alıştırma modu sentetik öğretim verilerini CANLI kayıtlardan ve puanlardan ayrı tutar.";renderSourceStatus();
+  }else{
+    renderLiveObservation();renderModelRows(liveData.models);renderEnsemble();renderSourceStatus();
+  }
+  loadIdea();
+}
+function renderLiveObservation(){
+  if(!liveData.latest){$("latestObservation").textContent="Kullanılamıyor. CANLI verileri yenile düğmesine bas.";$("realityCheck").textContent="CANLI gözlem ve model verisi gelene kadar kullanılamaz.";return}
+  const x=liveData.latest;
+  $("latestObservation").innerHTML=`<dl class="metaList"><dt>Havalimanı</dt><dd>LTFM</dd><dt>Rapor zamanı</dt><dd>${esc(x.localStamp)} Istanbul</dd><dt>Tür</dt><dd>Gözlem · IEM LTFM METAR arşivi</dd><dt>Sıcaklık</dt><dd>${fmt(x.tmpc,1)} °C</dd><dt>Sürekli rüzgâr</dt><dd>${fmt(x.sknt,1)} kt</dd><dt>Ham METAR</dt><dd>${esc(x.metar||"not available")}</dd></dl>`;
+  const today=istDate(),model=liveData.models.find(r=>r.date===today&&isFiniteNum(r.tmax));
+  $("realityCheck").textContent=model?`Context check only: the latest METAR temperature is ${fmt(x.tmpc)} °C while ${model.name} gives a DAILY Tmax of ${fmt(model.tmax)} °C for ${today}. These are different time definitions and must not be treated as a same-time verification.`:"Şu anda karşılaştırılabilir CANLI model satırı yok.";
+}
+function renderModelRows(rows){
+  const body=$("modelTableBody");body.innerHTML="";
+  if(!rows||!rows.length){body.innerHTML=`<tr><td colspan="6" class="statusNA">kullanılamıyor</td></tr>`;return}
+  const cell=v=>typeof v==="string"?esc(v):(isFiniteNum(v)?Number(v).toFixed(1):"missing");
+  rows.forEach(r=>{const tr=document.createElement("tr");tr.innerHTML=`<td>${esc(r.name||r.source||"—")}</td><td>${esc(r.date||"—")}</td><td class="num">${cell(r.tmax)}</td><td class="num">${cell(r.tmin)}</td><td class="num">${cell(r.precip)}</td><td class="num">${cell(r.wind)}</td>`;body.appendChild(tr)})
+}
+function renderEnsemble(){
+  const e=liveData.ensemble;if(!e){$("ensembleSummary").textContent="not available";return}
+  const statLine=(label,s,unit)=>`${label}: min ${fmt(s.min)} ${unit}, P10 ${fmt(s.p10)} ${unit}, median ${fmt(s.median)} ${unit}, P90 ${fmt(s.p90)} ${unit}, max ${fmt(s.max)} ${unit}`;
+  $("ensembleSummary").innerHTML=`<strong>${esc(e.modelLabel)}</strong><br>Valid: ${esc(e.date)} · Members: ${e.members}<br>${esc(statLine("Tmax",e.tmax,"°C"))}<br>${esc(statLine("Tmin",e.tmin,"°C"))}<br>${esc(statLine("Precip",e.precip,"mm"))}<br>${esc(statLine("Wind",e.wind,"kt"))}<br>≥1 mm veren üyeler: ${fmt(e.rainPct,0)}%`;
+}
+function setSourceStatus(name,status,error="") {liveData.sourceStatus[name]={status:String(status),error:String(error||""),time:istStamp()}}
+function renderSourceStatus(){
+  const b=$("sourceStatusBody");b.innerHTML="";const entries=Object.entries(liveData.sourceStatus);
+  if(!entries.length){b.innerHTML=`<tr><td>Alıştırma / istek yapılmadı</td><td>—</td><td>—</td><td>${esc(istStamp())}</td></tr>`;return}
+  entries.forEach(([name,s])=>{const tr=document.createElement("tr");tr.innerHTML=`<td>${esc(name)}</td><td>${esc(s.status)}</td><td>${esc(s.error||"—")}</td><td>${esc(s.time)}</td>`;b.appendChild(tr)})
+}
+
+function parseCSVLine(line,sep=","){const out=[];let cur="",q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(q&&line[i+1]==='"'){cur+='"';i++}else q=!q}else if(c===sep&&!q){out.push(cur);cur=""}else cur+=c}out.push(cur);return out}
+function toIstanbulLocal(date){return new Intl.DateTimeFormat("en-CA",{timeZone:IST_TZ,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).format(date).replace(", ","T")}
+async function fetchWithTimeout(url,ms=20000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(url,{signal:c.signal,cache:"no-store"});const text=await r.text();if(!r.ok)throw new Error(`HTTP ${r.status}: ${text.slice(0,180)}`);return {status:r.status,text,headers:r.headers}}finally{clearTimeout(t)}}
+async function refreshLive(){
+  liveData={observations:[],latest:null,daily:{},models:[],openMeteoModels:[],metNorwayRows:[],ensemble:null,sourceStatus:{}};renderReadWeather();
+  await Promise.allSettled([fetchIEM(),fetchOpenMeteoModels(),fetchMetNorway(),fetchEnsemble()]);liveData.models=[...(liveData.openMeteoModels||[]),...(liveData.metNorwayRows||[])];renderReadWeather();
+}
+async function fetchIEM(){
+  const today=istDate(),start=addDaysISO(today,-2),end=addDaysISO(today,1);const [y1,m1,d1]=start.split("-"),[y2,m2,d2]=end.split("-");
+  const url=`https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=LTFM&data=tmpc,sknt,gust,metar&year1=${y1}&month1=${m1}&day1=${d1}&year2=${y2}&month2=${m2}&day2=${d2}&tz=UTC&format=onlycomma&latlon=no&missing=empty&trace=empty`;
+  try{
+    const r=await fetchWithTimeout(url);const lines=r.text.trim().split(/\r?\n/).filter(Boolean);if(lines.length<2)throw new Error("No METAR rows returned");const h=parseCSVLine(lines[0]);const idx=Object.fromEntries(h.map((x,i)=>[x.trim(),i]));
+    const obs=[];for(const line of lines.slice(1)){const c=parseCSVLine(line);const valid=c[idx.valid]||"";const dt=new Date(valid.replace(" ","T")+(valid.endsWith("Z")?"":"Z"));if(Number.isNaN(dt.getTime()))continue;const local=toIstanbulLocal(dt);obs.push({utc:valid,localStamp:local,tmpc:nOrNull(c[idx.tmpc]),sknt:nOrNull(c[idx.sknt]),gust:nOrNull(c[idx.gust]),metar:c[idx.metar]||""})}
+    obs.sort((a,b)=>a.localStamp.localeCompare(b.localStamp));liveData.observations=obs;liveData.latest=obs.at(-1)||null;
+    const daily={};for(const o of obs){const day=o.localStamp.slice(0,10);daily[day]??={temps:[],winds:[],reports:0};if(isFiniteNum(o.tmpc))daily[day].temps.push(Number(o.tmpc));if(isFiniteNum(o.sknt))daily[day].winds.push(Number(o.sknt));daily[day].reports++}
+    Object.keys(daily).forEach(day=>{const d=daily[day];daily[day]={tmax:d.temps.length?Math.max(...d.temps):null,tmin:d.temps.length?Math.min(...d.temps):null,precip:null,wind:d.winds.length?Math.max(...d.winds):null,reports:d.reports,source:"IEM LTFM METAR archive"}});liveData.daily=daily;setSourceStatus("IEM LTFM METAR",r.status,"");
+  }catch(e){setSourceStatus("IEM LTFM METAR","başarısız",e.message)}
+}
+async function fetchOpenMeteoModels(){
+  const models=[
+    ["ECMWF IFS 0.25°","ecmwf_ifs025"],["GFS seamless","gfs_seamless"],["ICON seamless","icon_seamless"],["Météo-France seamless","meteofrance_seamless"],["UKMO seamless","ukmo_seamless"]
+  ];
+  const rows=[];await Promise.all(models.map(async ([label,id])=>{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max&wind_speed_unit=kn&timezone=Europe%2FIstanbul&forecast_days=3&models=${encodeURIComponent(id)}`;
+    try{const r=await fetchWithTimeout(url);const j=JSON.parse(r.text);if(j.reason)throw new Error(j.reason);const d=j.daily||{};for(let i=0;i<(d.time||[]).length;i++)rows.push({name:label,date:d.time[i],tmax:nOrNull(d.temperature_2m_max?.[i]),tmin:nOrNull(d.temperature_2m_min?.[i]),precip:nOrNull(d.precipitation_sum?.[i]),wind:nOrNull(d.wind_speed_10m_max?.[i])});setSourceStatus(`Open-Meteo ${label}`,r.status,"")}
+    catch(e){setSourceStatus(`Open-Meteo ${label}`,"başarısız",e.message)}
+  }));
+  const keep=[istDate(),addDaysISO(istDate(),1)];const filtered=rows.filter(r=>keep.includes(r.date));const final=[];
+  for(const day of keep){const dayRows=filtered.filter(r=>r.date===day);final.push(...dayRows);if(dayRows.length){const vals=k=>dayRows.map(r=>r[k]).filter(Number.isFinite);const row={name:"Model ortalaması",date:day};const range={name:"En düşük–en yüksek aralık",date:day};for(const k of ["tmax","tmin","precip","wind"]){const a=vals(k);row[k]=mean(a);range[k]=a.length?`${Math.min(...a).toFixed(1)}–${Math.max(...a).toFixed(1)}`:null}final.push(row,range)}}
+  liveData.openMeteoModels=final;
+}
+async function fetchMetNorway(){
+  const url=`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${LAT.toFixed(4)}&lon=${LON.toFixed(4)}`;
+  try{const r=await fetchWithTimeout(url);const j=JSON.parse(r.text);const series=j.properties?.timeseries||[];const by={};for(const item of series){const d=new Date(item.time);const local=toIstanbulLocal(d);const day=local.slice(0,10);by[day]??=[];by[day].push(item)}
+    const keep=[istDate(),addDaysISO(istDate(),1)], rows=[];for(const day of keep){const arr=by[day]||[];if(arr.length<20)continue;const temps=[],winds=[],prec=[];for(const it of arr){const det=it.data?.instant?.details||{};if(isFiniteNum(det.air_temperature))temps.push(Number(det.air_temperature));if(isFiniteNum(det.wind_speed))winds.push(Number(det.wind_speed)*1.943844);const p=it.data?.next_1_hours?.details?.precipitation_amount;if(isFiniteNum(p))prec.push(Number(p))}rows.push({name:"MET Norway",date:day,tmax:temps.length?Math.max(...temps):null,tmin:temps.length?Math.min(...temps):null,precip:prec.length?prec.reduce((a,b)=>a+b,0):null,wind:winds.length?Math.max(...winds):null})}liveData.metNorwayRows=rows;setSourceStatus("MET Norway",r.status,"")
+  }catch(e){setSourceStatus("MET Norway","başarısız",e.message)}
+}
+function percentile(arr,p){if(!arr.length)return null;const a=[...arr].sort((x,y)=>x-y);const i=(a.length-1)*p;const lo=Math.floor(i),hi=Math.ceil(i);return lo===hi?a[lo]:a[lo]+(a[hi]-a[lo])*(i-lo)}
+function stats(arr){const a=arr.filter(Number.isFinite).sort((x,y)=>x-y);return a.length?{min:a[0],p10:percentile(a,.1),median:percentile(a,.5),p90:percentile(a,.9),max:a.at(-1)}:{min:null,p10:null,median:null,p90:null,max:null}}
+async function fetchEnsemble(){
+  const url=`https://ensemble-api.open-meteo.com/v1/ensemble?latitude=${LAT}&longitude=${LON}&hourly=temperature_2m,precipitation,wind_speed_10m&wind_speed_unit=kn&timezone=Europe%2FIstanbul&forecast_days=3&models=icon_seamless_eps`;
+  try{const r=await fetchWithTimeout(url);const j=JSON.parse(r.text);if(j.reason)throw new Error(j.reason);const h=j.hourly||{},times=h.time||[],tom=addDaysISO(istDate(),1);const idxs=times.map((t,i)=>t.startsWith(tom)?i:-1).filter(i=>i>=0);const tkeys=Object.keys(h).filter(k=>k==="temperature_2m"||k.startsWith("temperature_2m_member"));const members=[];
+    for(const tk of tkeys){const suffix=tk.slice("temperature_2m".length),pk=`precipitation${suffix}`,wk=`wind_speed_10m${suffix}`;if(!h[pk]||!h[wk])continue;const ts=idxs.map(i=>nOrNull(h[tk][i])).filter(Number.isFinite),ps=idxs.map(i=>nOrNull(h[pk][i])).filter(Number.isFinite),ws=idxs.map(i=>nOrNull(h[wk][i])).filter(Number.isFinite);if(!ts.length)continue;members.push({tmax:Math.max(...ts),tmin:Math.min(...ts),precip:ps.reduce((a,b)=>a+b,0),wind:ws.length?Math.max(...ws):null})}
+    liveData.ensemble={modelLabel:"Open-Meteo ICON ensemble sistemi",date:tom,members:members.length,tmax:stats(members.map(x=>x.tmax)),tmin:stats(members.map(x=>x.tmin)),precip:stats(members.map(x=>x.precip)),wind:stats(members.map(x=>x.wind)),rainPct:members.length?100*members.filter(x=>x.precip>=1).length/members.length:null};setSourceStatus("Open-Meteo ensemble",r.status,"")
+  }catch(e){setSourceStatus("Open-Meteo ensemble","başarısız",e.message);liveData.ensemble=null}
+}
+
+function getIdeaKey(){return getTomorrow()}
+function loadIdea(){const i=currentModeStore("initialIdeas")[getIdeaKey()]||{};$("ideaTemp").value=i.temp||"";$("ideaPrecip").value=i.precip||"";$("ideaWhy").value=i.why||"";$("ideaChanged").value=i.changed||""}
+function saveIdea(){currentModeStore("initialIdeas")[getIdeaKey()]={temp:$("ideaTemp").value,precip:$("ideaPrecip").value,why:$("ideaWhy").value.trim(),changed:$("ideaChanged").value.trim(),savedAt:istStamp()};persistState();showMessage("ideaMessage","İlk fikir kaydedildi.","good")}
+
+function renderMission(){const date=getWorkDate();$("missionDate").textContent=`Çalışma tarihi: ${date}${state.mode==="practice"?` · alıştırma gün kaydırması ${state.practiceOffset}`:""}`;const obj=currentModeStore("checklist")[date]||{};qsa("[data-check]").forEach(x=>x.checked=!!obj[x.dataset.check])}
+function saveMission(){const date=getWorkDate(),obj={};qsa("[data-check]").forEach(x=>obj[x.dataset.check]=x.checked);currentModeStore("checklist")[date]=obj;persistState()}
+
+function draftFromForm(){return {validDate:getTomorrow(),tmax:$("fcTmax").value,tmin:$("fcTmin").value,precip:$("fcPrecip").value,wind:$("fcWind").value,reasoning:$("fcReason").value.trim(),confidence:$("fcConfidence").value,persistDate:$("persistDate").value,persistTmax:$("pTmax").value,persistTmin:$("pTmin").value,persistPrecip:$("pPrecip").value,persistWind:$("pWind").value,persistCapturedAt:istStamp()}}
+function validateForecast(d){const errs=[];["tmax","tmin","precip","wind"].forEach(k=>{if(!isFiniteNum(d[k]))errs.push(`${({tmax:"Tmax",tmin:"Tmin",precip:"Yağış",wind:"Rüzgâr",persistTmax:"Persistence Tmax",persistTmin:"Persistence Tmin",persistPrecip:"Persistence yağış",persistWind:"Persistence rüzgâr"}[k]||k)} zorunludur`)});if(isFiniteNum(d.tmin)&&isFiniteNum(d.tmax)&&Number(d.tmin)>Number(d.tmax))errs.push("Tmin, Tmax değerinden büyük olamaz");if(isFiniteNum(d.precip)&&Number(d.precip)<0)errs.push("Yağış negatif olamaz");if(isFiniteNum(d.wind)&&Number(d.wind)<0)errs.push("Rüzgâr negatif olamaz");if(!d.reasoning)errs.push("Gerekçe zorunludur");if(!d.confidence)errs.push("Güven düzeyi zorunludur");if(!d.persistDate)errs.push("Persistence tarihi zorunludur");["persistTmax","persistTmin","persistPrecip","persistWind"].forEach(k=>{if(!isFiniteNum(d[k]))errs.push(`${({tmax:"Tmax",tmin:"Tmin",precip:"Yağış",wind:"Rüzgâr",persistTmax:"Persistence Tmax",persistTmin:"Persistence Tmin",persistPrecip:"Persistence yağış",persistWind:"Persistence rüzgâr"}[k]||k)} zorunludur`)});if(d.persistDate&&compareISO(d.persistDate,getWorkDate())>=0)errs.push("Persistence, çalışma gününden önceki tamamlanmış bir günden gelmelidir");return errs}
+function renderForecastForm(){
+  const valid=getTomorrow();$("forecastValidDate").textContent=valid;const rec=currentModeStore("records")[valid];const draft=currentModeStore("drafts")[valid]||{};const src=rec||draft;
+  const map={fcTmax:"tmax",fcTmin:"tmin",fcPrecip:"precip",fcWind:"wind",fcReason:"reasoning",fcConfidence:"confidence",persistDate:"persistDate",pTmax:"persistTmax",pTmin:"persistTmin",pPrecip:"persistPrecip",pWind:"persistWind"};Object.entries(map).forEach(([id,k])=>$(id).value=src[k]??"");
+  const locked=!!rec;qsa("#make-forecast input,#make-forecast textarea,#make-forecast select").forEach(el=>el.disabled=locked);$("saveDraftBtn").disabled=locked;$("submitForecastBtn").disabled=locked;$("fillPersistenceBtn").disabled=locked;clearMessage("forecastMessage");
+  if(rec)renderReceipt(rec);else $("submissionReceipt").textContent="Bu geçerlilik tarihi için gönderilmiş tahmin yok.";
+}
+function saveDraft(){const d=draftFromForm();currentModeStore("drafts")[d.validDate]=d;persistState();showMessage("forecastMessage","Taslak yerel olarak kaydedildi.","good")}
+function submitForecast(){
+  const d=draftFromForm(),records=currentModeStore("records");if(records[d.validDate]){showMessage("forecastMessage","Reddedildi: Bu geçerlilik tarihi için zaten gönderilmiş bir tahmin var.","bad");return}
+  const errs=validateForecast(d);if(errs.length){showMessage("forecastMessage",`Gerçeklik kontrolü başarısız: ${errs.join("; ")}.`,"bad");return}
+  const submittedAt=istStamp(),onTime=isOnTimeNow();const rec={validDate:d.validDate,submittedAtIstanbul:submittedAt,onTime,late:!onTime,status:onTime?"ZAMANINDA":"GEÇ (LATE)",tmax:Number(d.tmax),tmin:Number(d.tmin),precip:Number(d.precip),wind:Number(d.wind),reasoning:d.reasoning,confidence:d.confidence,persistDate:d.persistDate,persistCapturedAt:submittedAt,persistTmax:Number(d.persistTmax),persistTmin:Number(d.persistTmin),persistPrecip:Number(d.persistPrecip),persistWind:Number(d.persistWind),mode:state.mode,locked:true};records[d.validDate]=rec;delete currentModeStore("drafts")[d.validDate];persistState();renderForecastForm();renderProgress();showMessage("forecastMessage",onTime?"Gönderim ZAMANINDA kaydedildi ve kilitlendi.":"Gönderim GEÇ (LATE) olarak kaydedildi ve kilitlendi. Katılıma sayılmaz.",onTime?"good":"warn")
+}
+function renderReceipt(r){$("submissionReceipt").innerHTML=`<div class="receipt"><h4>${esc(r.status)} · KİLİTLİ</h4><div class="metaList"><dt>Gönderim zamanı</dt><dd>${esc(r.submittedAtIstanbul)}</dd><dt>Geçerlilik tarihi</dt><dd>${esc(r.validDate)}</dd><dt>Tahmin</dt><dd>Tmax ${fmt(r.tmax)} °C · Tmin ${fmt(r.tmin)} °C · Precip ${fmt(r.precip)} mm · Wind ${fmt(r.wind)} kt</dd><dt>Persistence</dt><dd>${esc(r.persistDate)} · Tmax ${fmt(r.persistTmax)} °C · Tmin ${fmt(r.persistTmin)} °C · Precip ${fmt(r.persistPrecip)} mm · Wind ${fmt(r.persistWind)} kt</dd><dt>Güven düzeyi</dt><dd>${esc(r.confidence)}</dd><dt>Gerekçe</dt><dd>${esc(r.reasoning)}</dd></div></div>`}
+function fillPersistence(){
+  const base=addDaysISO(getWorkDate(),-1);let d=null;
+  if(state.mode==="practice")d=syntheticDaily(base,91);else d=liveData.daily[base]||null;
+  if(!d){showMessage("persistMessage","Son tamamlanmış gün mevcut kaynaktan alınamıyor. Öğretim elemanı onaylı persistence değerlerini elle gir.","warn");return}
+  $("persistDate").value=base;$("pTmax").value=d.tmax??"";$("pTmin").value=d.tmin??"";$("pPrecip").value=d.precip??"";$("pWind").value=d.wind??"";showMessage("persistMessage",d.precip===null?"Mevcut tamamlanmış gün değerleri dolduruldu. METAR’da yağış miktarı eksik ve 0 ile değiştirilemez; onaylı yağış miktarı kaynağını elle gir.":"Persistence alanları son tamamlanmış günden dolduruldu.",d.precip===null?"warn":"good")
+}
+
+function renderVerificationSelector(){
+  const sel=$("verifyDateSelect"),records=currentModeStore("records");const old=sel.value;sel.innerHTML="";const dates=Object.keys(records).filter(dayEnded).sort().reverse();if(!dates.length){sel.innerHTML='<option value="">Uygun tamamlanmış gün yok</option>';renderVerification();return}dates.forEach(d=>{const o=document.createElement("option");o.value=d;o.textContent=`${d} · ${records[d].status}`;sel.appendChild(o)});sel.value=dates.includes(old)?old:dates[0];renderVerification()
+}
+function getVerificationDate(){return $("verifyDateSelect").value}
+function renderVerification(){
+  const d=getVerificationDate(),records=currentModeStore("records"),vstore=currentModeStore("verifications");if(!d||!records[d]){$("verifyForecastSummary").textContent="Hedef günü bittikten sonra bir tahmin seç.";$("errorTableBody").innerHTML="";return}
+  const r=records[d],v=vstore[d]||{};$("verifyForecastSummary").innerHTML=`<strong>${esc(d)}</strong> · Tahmin: Tmax ${fmt(r.tmax)} °C, Tmin ${fmt(r.tmin)} °C, Precip ${fmt(r.precip)} mm, Wind ${fmt(r.wind)} kt · Persistence tarihi ${esc(r.persistDate)}`;
+  $("obsTmax").value=v.observations?.tmax??"";$("obsTmin").value=v.observations?.tmin??"";$("obsPrecip").value=v.observations?.precip??"";$("obsWind").value=v.observations?.wind??"";$("obsSource").value=v.source||"";$("learnBiggest").value=v.learning?.biggest||"";$("learnReason").value=v.learning?.reason||"";$("learnNext").value=v.learning?.next||"";$("loadSyntheticObsBtn").style.display=state.mode==="practice"?"inline-block":"none";renderErrorsFor(d)
+}
+function observationFromForm(){return {tmax:nOrNull($("obsTmax").value),tmin:nOrNull($("obsTmin").value),precip:nOrNull($("obsPrecip").value),wind:nOrNull($("obsWind").value)}}
+function saveVerification(){const d=getVerificationDate();if(!d)return;const obs=observationFromForm();if(isFiniteNum(obs.precip)&&obs.precip<0||isFiniteNum(obs.wind)&&obs.wind<0){showMessage("verifyMessage","Yağış ve rüzgâr gözlemleri negatif olamaz.","bad");return}const store=currentModeStore("verifications");const prev=store[d]||{};store[d]={...prev,observations:obs,source:$("obsSource").value.trim(),savedAt:istStamp()};persistState();renderErrorsFor(d);renderProgress();showMessage("verifyMessage","Gözlemler kaydedildi. Eksik değerler eksik kaldı ve hesaplamaların dışında tutuldu.","good")}
+function loadSyntheticObservation(){const d=getVerificationDate();if(!d||state.mode!=="practice")return;const s=syntheticDaily(d,91);$("obsTmax").value=s.tmax;$("obsTmin").value=s.tmin;$("obsPrecip").value=s.precip;$("obsWind").value=s.wind;$("obsSource").value="SENTETİK alıştırma gözlemi";showMessage("verifyMessage","Alıştırma için SENTETİK günlük gözlem yüklendi.","warn")}
+function calcErrorRow(r,obs,key){const f=r[key],o=obs?.[key];if(!Number.isFinite(f)||!Number.isFinite(o))return {missing:true};const e=f-o,p=r[`persist${key[0].toUpperCase()+key.slice(1)}`];if(!Number.isFinite(p))return {forecast:f,obs:o,error:e,abs:Math.abs(e),pMissing:true};const pe=p-o,ae=Math.abs(e),pa=Math.abs(pe);return {forecast:f,obs:o,error:e,abs:ae,pError:pe,result:ae<pa?"Win":ae>pa?"Loss":"Tie"}}
+function renderErrorsFor(d){const r=currentModeStore("records")[d],v=currentModeStore("verifications")[d]||{},obs=v.observations||{},body=$("errorTableBody");body.innerHTML="";if(!r)return;VARS.forEach(vr=>{const x=calcErrorRow(r,obs,vr.key),tr=document.createElement("tr");tr.innerHTML=x.missing?`<td>${vr.label}</td><td>${fmt(r[vr.key])} ${vr.unit}</td><td class="statusNA">eksik</td><td colspan="4" class="statusNA">doğrulanmamış</td>`:`<td>${vr.label}</td><td>${fmt(x.forecast)} ${vr.unit}</td><td>${fmt(x.obs)} ${vr.unit}</td><td>${x.error>=0?"+":""}${fmt(x.error)}</td><td>${fmt(x.abs)}</td><td>${x.pMissing?"eksik":`${x.pError>=0?"+":""}${fmt(x.pError)}`}</td><td>${({Win:"Kazanç",Tie:"Beraberlik",Loss:"Kayıp"}[x.result]||"doğrulanmamış")}</td>`;body.appendChild(tr)})}
+function saveLearning(){const d=getVerificationDate();if(!d)return;const store=currentModeStore("verifications"),prev=store[d]||{};store[d]={...prev,learning:{biggest:$("learnBiggest").value.trim(),reason:$("learnReason").value.trim(),next:$("learnNext").value.trim()},learningSavedAt:istStamp()};persistState();showMessage("verifyMessage","Öğrenme notu kilitli tahminden ayrı olarak kaydedildi.","good")}
+
+function parseCalendar(text){return uniqueSorted(text.split(/[\s,;]+/).map(x=>x.trim()).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))}
+function saveCalendar(){state.calendar=parseCalendar($("calendarDates").value);persistState();renderProgress()}
+function recordComplete(r){return r&&[r.tmax,r.tmin,r.precip,r.wind].every(Number.isFinite)}
+function participationStats(){const cal=state.calendar,total=cal.length,minReq=total?Math.ceil(total*.7):null,elapsed=cal.filter(deadlineElapsed),records=currentModeStore("records");const onTime=elapsed.filter(d=>records[d]?.onTime&&recordComplete(records[d])).length;return {total,elapsed:elapsed.length,onTime,minReq,additional:minReq===null?null:Math.max(0,minReq-onTime),pct:elapsed.length?100*onTime/elapsed.length:null,met:minReq===null?null:onTime>=minReq}}
+function eligibleCases(key,mode=state.mode,period=null){const recs=state.records[mode],vers=state.verifications[mode],out=[];for(const [date,r] of Object.entries(recs)){if(period&&(date<period.start||date>period.end))continue;const o=vers[date]?.observations?.[key];const p=r[`persist${key[0].toUpperCase()+key.slice(1)}`];const validPersist=r.persistDate&&compareISO(r.persistDate,r.validDate)<0&&r.persistCapturedAt&&r.submittedAtIstanbul&&r.persistCapturedAt<=r.submittedAtIstanbul;if(r.onTime&&recordComplete(r)&&Number.isFinite(o)&&Number.isFinite(p)&&validPersist){const e=r[key]-o,pe=p-o,ae=Math.abs(e),ape=Math.abs(pe);out.push({date,e,pe,ae,ape,result:ae<ape?"Win":ae>ape?"Loss":"Tie"})}}return out}
+function scoreFor(key,mode=state.mode,period=null){const c=eligibleCases(key,mode,period);if(!c.length)return {cases:0,mae:null,bias:null,pmae:null,skill:null,w:0,t:0,l:0,overall:null};const mae=mean(c.map(x=>x.ae)),bias=mean(c.map(x=>x.e)),pmae=mean(c.map(x=>x.ape));const skill=pmae===0?null:100*(1-mae/pmae),w=c.filter(x=>x.result==="Win").length,t=c.filter(x=>x.result==="Tie").length,l=c.filter(x=>x.result==="Loss").length;const winPoints=100*(w+.5*t)/c.length;const overall=skill===null?null:.5*clamp(skill,0,100)+.5*winPoints;return {cases:c.length,mae,bias,pmae,skill,w,t,l,overall}}
+function renderProgress(){
+  $("calendarDates").value=state.calendar.join("\n");const p=participationStats();$("kpiScheduled").textContent=p.total||"N/A";$("kpiElapsed").textContent=p.total?p.elapsed:"N/A";$("kpiOnTime").textContent=p.total?p.onTime:"N/A";$("kpiMinimum").textContent=p.total?p.minReq:"N/A";$("participationBar").style.width=`${p.pct===null?0:clamp(p.pct,0,100)}%`;
+  $("participationText").textContent=!p.total?"Öğretim elemanının tam takvimini ekle.":`Bugüne kadarki katılım: ${p.pct===null?"N/A":p.pct.toFixed(1)+"%"}. Tam takvim minimumu için gereken ek zamanında ve eksiksiz gün sayısı: ${p.additional}. ${p.met?"Koşul sağlandı":"Koşul henüz sağlanmadı"}.`;
+  const b=$("scoreTableBody");b.innerHTML="";VARS.forEach(v=>{const s=scoreFor(v.key),tr=document.createElement("tr");tr.innerHTML=`<td>${v.label}</td><td>${s.cases}</td><td>${s.mae===null?"N/A":s.mae.toFixed(2)+" "+v.unit}</td><td>${s.bias===null?"N/A":(s.bias>=0?"+":"")+s.bias.toFixed(2)+" "+v.unit}</td><td>${s.pmae===null?"N/A":s.pmae.toFixed(2)+" "+v.unit}</td><td>${s.skill===null?"N/A":(s.skill>=0?"+":"")+s.skill.toFixed(1)+"%"}</td><td>${s.cases?`${s.w} / ${s.t} / ${s.l}`:"N/A"}</td><td>${s.overall===null?"N/A":s.overall.toFixed(1)}</td>`;b.appendChild(tr)});renderMonthly()
+}
+function renderMonthly(){const dates=Object.keys(currentModeStore("records"));const months=uniqueSorted(dates.map(monthKey).filter(Boolean));if(!months.length){$("monthlyProgress").textContent="Henüz uygun doğrulanmış durum yok.";return}let html='<div class="tableWrap"><table class="dataTable"><thead><tr><th>Ay</th><th>Değişken</th><th>Durum sayısı</th><th>MAE</th><th>Bias</th><th>Skill %</th></tr></thead><tbody>';for(const m of months){for(const v of VARS){const end=`${m}-31`,s=scoreFor(v.key,state.mode,{start:`${m}-01`,end});html+=`<tr><td>${esc(m)}</td><td>${v.label}</td><td>${s.cases}</td><td>${s.mae===null?"N/A":s.mae.toFixed(2)}</td><td>${s.bias===null?"N/A":s.bias.toFixed(2)}</td><td>${s.skill===null?"N/A":s.skill.toFixed(1)}</td></tr>`}}html+='</tbody></table></div>';$("monthlyProgress").innerHTML=html}
+function runTests(){
+  const res=[];const t=(name,ok)=>res.push({name,ok});t("14/20 katılım koşulunu sağlar",14>=Math.ceil(20*.7));t("13/20 katılım koşulunu sağlamaz",!(13>=Math.ceil(20*.7)));t("16/23 katılım koşulunu sağlamaz",!(16>=Math.ceil(23*.7)));t("21:00:00 zamanında",21*3600<=21*3600);t("21:00:01 geç",21*3600+1>21*3600);const skill=100*(1-1.5/2);t("MAE 1.5 ve 2.0 karşılaştırması +%25 Skill verir",Math.abs(skill-25)<1e-9);const overall=.5*25+.5*(100*(6+.5*2)/10);t("%25 Skill ile 6W 2T 2L sonucu 47.5 verir",Math.abs(overall-47.5)<1e-9);const missing=nOrNull("");t("Boş değer eksik kalır, sıfır olmaz",missing===null);const dates=uniqueSorted(["2026-01-01","2026-01-01"]);t("Tekrarlanan tarih bir kez sayılır",dates.length===1);state.tests={ran:true,results:res};persistState();$("testResults").innerHTML=res.map(x=>`<div class="${x.ok?"statusGood":"statusBad"}">${x.ok?"PASS":"FAIL"} · ${esc(x.name)}</div>`).join("")
+}
+function renderTests(){if(!state.tests?.ran){$("testResults").textContent="NOT TESTED";return}$("testResults").innerHTML=(state.tests.results||[]).map(x=>`<div class="${x.ok?"statusGood":"statusBad"}">${x.ok?"PASS":"FAIL"} · ${esc(x.name)}</div>`).join("")}
+
+const CSV_HEADERS=["mode","validDate","submittedAtIstanbul","status","onTime","late","tmax","tmin","precip","wind","persistDate","persistCapturedAt","persistTmax","persistTmin","persistPrecip","persistWind","reasoning","confidence","obsTmax","obsTmin","obsPrecip","obsWind","obsSource","learnBiggest","learnReason","learnNext"];
+function csvCell(v){const s=String(v??"");return `"${s.replace(/"/g,'""')}"`}
+function exportCSV(){let lines=[CSV_HEADERS.map(csvCell).join(";")];for(const mode of ["practice","live"]){for(const [d,r] of Object.entries(state.records[mode])){const v=state.verifications[mode][d]||{},o=v.observations||{},l=v.learning||{};const row={mode,validDate:d,...r,obsTmax:o.tmax,obsTmin:o.tmin,obsPrecip:o.precip,obsWind:o.wind,obsSource:v.source,learnBiggest:l.biggest,learnReason:l.reason,learnNext:l.next};lines.push(CSV_HEADERS.map(h=>csvCell(row[h])).join(";"))}}const blob=new Blob(["\ufeff"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`LTFM_backup_${istDate()}_${istTime().replaceAll(":","")}.csv`;a.click();URL.revokeObjectURL(a.href);showMessage("csvMessage","CSV yedeği indirildi.","good")}
+function parseDelimited(text,sep=";"){const rows=[];let row=[],cur="",q=false;for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(q&&text[i+1]==='"'){cur+='"';i++}else q=!q}else if(c===sep&&!q){row.push(cur);cur=""}else if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cur);cur="";if(row.some(x=>x!==""))rows.push(row);row=[]}else cur+=c}row.push(cur);if(row.some(x=>x!==""))rows.push(row);return rows}
+async function restoreCSV(file){try{const text=(await file.text()).replace(/^\ufeff/,""),rows=parseDelimited(text,";");if(rows.length<2)throw new Error("CSV içinde kayıt yok");const headers=rows[0],idx=Object.fromEntries(headers.map((h,i)=>[h,i]));let added=0,skipped=0;for(const row of rows.slice(1)){const get=h=>row[idx[h]]??"";const mode=get("mode")==="live"?"live":"practice",d=get("validDate");if(!d)continue;if(state.records[mode][d]){skipped++;continue}const num=h=>{const v=get(h);return v===""?null:Number(v)};state.records[mode][d]={mode,validDate:d,submittedAtIstanbul:get("submittedAtIstanbul"),status:get("status"),onTime:get("onTime")==="true",late:get("late")==="true",tmax:num("tmax"),tmin:num("tmin"),precip:num("precip"),wind:num("wind"),persistDate:get("persistDate"),persistCapturedAt:get("persistCapturedAt"),persistTmax:num("persistTmax"),persistTmin:num("persistTmin"),persistPrecip:num("persistPrecip"),persistWind:num("persistWind"),reasoning:get("reasoning"),confidence:get("confidence"),locked:true};const obs={tmax:num("obsTmax"),tmin:num("obsTmin"),precip:num("obsPrecip"),wind:num("obsWind")};const hasObs=Object.values(obs).some(Number.isFinite),learn={biggest:get("learnBiggest"),reason:get("learnReason"),next:get("learnNext")};if(hasObs||get("obsSource")||Object.values(learn).some(Boolean))state.verifications[mode][d]={observations:obs,source:get("obsSource"),learning:learn};added++}persistState();renderMode();showMessage("csvMessage",`Geri yükleme tamamlandı: ${added} yeni tarih eklendi, ${skipped} mevcut tarih atlandı. Puanlar geri yüklenen kayıtlardan yeniden hesaplandı.`,"good")}catch(e){showMessage("csvMessage",`Geri yükleme başarısız: ${e.message}`,"bad")}}
+
+function loadProfileFields(){const p=state.profile;$("studentName").value=p.name||"";$("studentNo").value=p.studentNo||"";$("reportStart").value=p.reportStart||"";$("reportEnd").value=p.reportEnd||"";$("reflection").value=p.reflection||"";$("aiLog").value=p.aiLog||"";renderTests();updateCloudMini()}
+function saveProfile(){state.profile={name:$("studentName").value.trim(),studentNo:$("studentNo").value.trim(),reportStart:$("reportStart").value,reportEnd:$("reportEnd").value,reflection:$("reflection").value.trim(),aiLog:$("aiLog").value.trim()};state.cloud={...state.cloud,apiKey:$("fbApiKey").value.trim(),projectId:$("fbProjectId").value.trim(),email:$("fbEmail").value.trim()};persistState();showMessage("reportMessage","Rapor bilgileri yerel olarak kaydedildi.","good")}
+function reportPeriod(){const p=state.profile,start=p.reportStart||"0000-01-01",end=p.reportEnd||"9999-12-31";return {start,end}}
+function generateReport(){saveProfile();const p=state.profile,part=participationStats(),period=reportPeriod(),mode=state.mode,recs=state.records[mode],vers=state.verifications[mode];const dates=Object.keys(recs).filter(d=>d>=period.start&&d<=period.end).sort();let scoreRows="";VARS.forEach(v=>{const s=scoreFor(v.key,mode,period);scoreRows+=`<tr><td>${v.label}</td><td>${s.cases}</td><td>${s.mae===null?"N/A":s.mae.toFixed(2)}</td><td>${s.bias===null?"N/A":s.bias.toFixed(2)}</td><td>${s.pmae===null?"N/A":s.pmae.toFixed(2)}</td><td>${s.skill===null?"N/A":s.skill.toFixed(1)+"%"}</td><td>${s.cases?`${s.w}/${s.t}/${s.l}`:"N/A"}</td><td>${s.overall===null?"N/A":s.overall.toFixed(1)}</td></tr>`});let app="";dates.forEach(d=>{const r=recs[d],v=vers[d]||{},o=v.observations||{},l=v.learning||{};app+=`<tr><td>${esc(d)}</td><td>${esc(r.submittedAtIstanbul)}</td><td>${esc(r.status)}</td><td>${fmt(r.tmax)} / ${fmt(o.tmax)}</td><td>${fmt(r.tmin)} / ${fmt(o.tmin)}</td><td>${fmt(r.precip)} / ${fmt(o.precip)}</td><td>${fmt(r.wind)} / ${fmt(o.wind)}</td><td>${esc(r.persistDate)}</td><td>${esc(v.source||"missing")}</td><td>${esc(l.biggest||"missing")}</td></tr>`});const scores=VARS.map(v=>({v,s:scoreFor(v.key,mode,period)}));let monthly="";for(const m of uniqueSorted(dates.map(monthKey))){for(const v of VARS){const s=scoreFor(v.key,mode,{start:`${m}-01`,end:`${m}-31`});monthly+=`<tr><td>${m}</td><td>${v.label}</td><td>${s.cases}</td><td>${s.mae===null?"N/A":s.mae.toFixed(2)}</td><td>${s.bias===null?"N/A":s.bias.toFixed(2)}</td><td>${s.skill===null?"N/A":s.skill.toFixed(1)+"%"}</td></tr>`}}const html=`<article class="reportPage"><h1>MTO111E Hava Tahmin Raporu</h1><p class="muted">Havalimanı LTFM · ${esc(mode==="practice"?"ALIŞTIRMA":"CANLI")} kayıtları · rapor dönemi ${esc(p.reportStart||"ayarlanmamış")} to ${esc(p.reportEnd||"ayarlanmamış")}</p><h2>Öğrenci ve katılım</h2><table><tr><th>Ad Soyad</th><td>${esc(p.name||"girilmemiş")}</td><th>Öğrenci no.</th><td>${esc(p.studentNo||"girilmemiş")}</td></tr><tr><th>Planlanan günler</th><td>${part.total||"N/A"}</td><th>Zamanında ve eksiksiz</th><td>${part.total?part.onTime:"N/A"}</td></tr><tr><th>Gereken minimum</th><td>${part.total?part.minReq:"N/A"}</td><th>Koşul</th><td>${part.total?(part.met?"Koşul sağlandı":"Koşul sağlanmadı"):"N/A"}</td></tr></table><h2>Tahmin performansı</h2><table><thead><tr><th>Değişken</th><th>Durum sayısı</th><th>MAE</th><th>Bias</th><th>Persistence MAE</th><th>Skill</th><th>W/T/L</th><th>Genel başarı</th></tr></thead><tbody>${scoreRows}</tbody></table><h2>Aylık gelişim</h2><table><thead><tr><th>Ay</th><th>Değişken</th><th>Durum sayısı</th><th>MAE</th><th>Bias</th><th>Skill</th></tr></thead><tbody>${monthly||'<tr><td colspan="6">N/A</td></tr>'}</tbody></table><h2>Kişisel değerlendirmem</h2><p>${esc(p.reflection||"girilmemiş").replace(/\n/g,"<br>")}</p><h2>Yapay zekâ kullanım günlüğü</h2><p>${esc(p.aiLog||"girilmemiş").replace(/\n/g,"<br>")}</p><div class="pageBreak"></div><h2>Günlük kayıt eki</h2><table><thead><tr><th>Geçerlilik tarihi</th><th>Gönderim</th><th>Durum</th><th>Tmax F/O</th><th>Tmin F/O</th><th>Precip F/O</th><th>Wind F/O</th><th>Persistence tarihi</th><th>Gözlem kaynağı</th><th>Öğrenme notu</th></tr></thead><tbody>${app||'<tr><td colspan="10">Bu dönemde kayıt yok.</td></tr>'}</tbody></table><div class="pageBreak"></div><h2>Genel başarı puanları</h2><table><thead><tr><th>Değişken</th><th>Genel başarı puanı</th></tr></thead><tbody>${scores.map(x=>`<tr><td>${x.v.label}</td><td>${x.s.overall===null?"N/A":x.s.overall.toFixed(1)}</td></tr>`).join("")}</tbody></table><p class="muted">Katılım bu dört değişken puanından ayrıdır. Eksik gözlemler sıfır kabul edilmez.</p></article>`;$("reportOutput").innerHTML=html;$("reportOutput").classList.add("generated");showMessage("reportMessage","Rapor kaydedilmiş kayıtlardan oluşturuldu.","good")}
+function printReport(){if(!$("reportOutput").classList.contains("generated"))generateReport();window.print()}
+
+
+
+function firebaseConfigReady(){
+  return Boolean(FIREBASE_CONFIG.databaseURL);
+}
+
+function realtimeDashboardUrl(){
+  return FIREBASE_CONFIG.databaseURL.replace(/\/+$/,"") + "/dashboard.json";
+}
+
+function cloudPayload(){
+  const copy = JSON.parse(JSON.stringify(state));
+  copy.cloud = {};
+  return {
+    updatedAt:Number(copy.meta?.updatedAt || Date.now()),
+    payload:copy
+  };
+}
+
+function setSyncMessage(text,type="good"){
+  const el = $("firebaseMessage");
+  if(!el) return;
+  el.className = `message ${type}`;
+  el.style.display = "block";
+  el.textContent = text;
+}
+
+function scheduleCloudPush(){
+  if(!firebaseConfigReady() || isApplyingRemote) return;
+  clearTimeout(cloudPushTimer);
+  cloudPushTimer = setTimeout(()=>cloudPush(false),450);
+}
+
+async function cloudPush(show=false){
+  if(!firebaseConfigReady()) return;
+
+  try{
+    const body = cloudPayload();
+    const r = await fetch(realtimeDashboardUrl(),{
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(body)
+    });
+
+    const j = await r.json().catch(()=>null);
+    if(!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
+
+    updateCloudMini("senkronize");
+    if(show) setSyncMessage("Veriler Firebase'e gönderildi.","good");
+
+  }catch(e){
+    console.error("Firebase push error",e);
+    updateCloudMini("bağlantı hatası");
+    setSyncMessage(
+      "Firebase'e yazılamadı. Realtime Database Rules ayarını kontrol et: " + e.message,
+      "bad"
+    );
+  }
+}
+
+async function cloudPull(show=false){
+  if(!firebaseConfigReady()) return;
+
+  try{
+    const r = await fetch(realtimeDashboardUrl(),{
+      cache:"no-store",
+      headers:{"Accept":"application/json"}
+    });
+    const j = await r.json().catch(()=>null);
+
+    if(!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
+
+    if(!j){
+      // Database is empty: seed it from this device.
+      await cloudPush(false);
+      updateCloudMini("ilk kayıt oluşturuldu");
+      setSyncMessage("Firebase bağlantısı aktif. İlk bulut kaydı oluşturuldu.","good");
+      return;
+    }
+
+    const remoteUpdated = Number(j.updatedAt || 0);
+    const localUpdated = Number(state.meta?.updatedAt || 0);
+
+    if(j.payload && remoteUpdated > localUpdated){
+      isApplyingRemote = true;
+
+      state = mergeDefaults(j.payload);
+      state.cloud = {};
+
+      // Keep remote timestamp unchanged so we don't create a push loop.
+      persistState({keepTimestamp:true});
+      renderMode();
+
+      isApplyingRemote = false;
+
+      updateCloudMini("senkronize");
+      setSyncMessage("Firebase aktif · diğer cihazdaki yeni veriler alındı.","good");
+
+    }else if(localUpdated > remoteUpdated){
+      // This device has newer data; publish it.
+      await cloudPush(false);
+      updateCloudMini("senkronize");
+      if(show) setSyncMessage("Bu cihazdaki yeni veriler Firebase'e gönderildi.","good");
+
+    }else{
+      updateCloudMini("senkronize");
+      if(show) setSyncMessage("Firebase aktif · veriler güncel.","good");
+    }
+
+  }catch(e){
+    console.error("Firebase pull error",e);
+    updateCloudMini("bağlantı hatası");
+    setSyncMessage(
+      "Firebase'e bağlanılamadı. Realtime Database Rules ayarını kontrol et: " + e.message,
+      "bad"
+    );
+  }
+}
+
+function startCloudPoll(){
+  clearInterval(cloudPollTimer);
+
+  // First synchronization immediately.
+  cloudPull(true);
+
+  // Then keep PC/phone synchronized automatically.
+  cloudPollTimer = setInterval(()=>cloudPull(false),2000);
+}
+
+function updateCloudMini(status){
+  const el = $("cloudMini");
+  if(!el) return;
+
+  if(!firebaseConfigReady()){
+    el.textContent = "Bulut senkronu: kapalı";
+    return;
+  }
+
+  el.textContent = `Bulut senkronu: ${status || "bağlanıyor"}`;
+}
+
+function wireEvents(){
+  qsa(".tabBtn").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
+  $("practiceModeBtn").addEventListener("click",()=>{state.mode="practice";persistState();renderMode()});$("liveModeBtn").addEventListener("click",()=>{state.mode="live";persistState();renderMode()});
+  $("practiceResetBtn").addEventListener("click",()=>{state.practiceOffset=0;persistState();renderMode()});$("practiceNextBtn").addEventListener("click",()=>{state.practiceOffset++;persistState();renderMode()});$("refreshLiveBtn").addEventListener("click",refreshLive);
+  qsa("[data-check]").forEach(x=>x.addEventListener("change",saveMission));$("saveIdeaBtn").addEventListener("click",saveIdea);
+  $("saveDraftBtn").addEventListener("click",saveDraft);$("submitForecastBtn").addEventListener("click",submitForecast);$("fillPersistenceBtn").addEventListener("click",fillPersistence);
+  $("verifyDateSelect").addEventListener("change",renderVerification);$("saveVerificationBtn").addEventListener("click",saveVerification);$("loadSyntheticObsBtn").addEventListener("click",loadSyntheticObservation);$("saveLearningBtn").addEventListener("click",saveLearning);
+  $("saveCalendarBtn").addEventListener("click",saveCalendar);$("runTestsBtn").addEventListener("click",runTests);$("downloadCsvBtn").addEventListener("click",exportCSV);$("uploadCsvInput").addEventListener("change",e=>{const f=e.target.files?.[0];if(f)restoreCSV(f);e.target.value=""});
+  $("saveProfileBtn").addEventListener("click",saveProfile);$("generateReportBtn").addEventListener("click",generateReport);$("printReportBtn").addEventListener("click",printReport);
+  cloudPush(true)});
+  qsa("#forecastFormWrap input,#forecastFormWrap textarea,#forecastFormWrap select,#persistDate,#pTmax,#pTmin,#pPrecip,#pWind").forEach(el=>el.addEventListener("input",()=>{if(!currentModeStore("records")[getTomorrow()]){currentModeStore("drafts")[getTomorrow()]=draftFromForm();scheduleSave()}}));
+}
+function tick(){$("clockText").textContent=`İstanbul saati: ${istDate()} ${istTime()}`}
+function auditConsole(){const required=["read-weather","make-forecast","check-errors","review-progress","save-report"];const missing=required.filter(id=>!$(id));if(missing.length)console.error("Missing required tab panels",missing)}
+
+document.addEventListener("DOMContentLoaded",()=>{updateCloudMini("bağlanıyor");
+  loadState();wireEvents();tick();setInterval(tick,1000);auditConsole();renderMode();renderTests();updateCloudMini();if(fbSession){startCloudPoll();cloudPull(false)}
+});
+</script>
+</body>
+</html>
